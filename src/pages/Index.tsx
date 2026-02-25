@@ -3,6 +3,7 @@ import { Search } from "lucide-react";
 import { careers, categories, CareerPath, CareerCategory } from "@/data/careers";
 import CareerCard from "@/components/CareerCard";
 import CareerDetail from "@/components/CareerDetail";
+import AppNav from "@/components/AppNav";
 import heroBg from "@/assets/hero-bg.jpg";
 
 const Index = () => {
@@ -21,6 +22,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <AppNav />
       {/* Hero */}
       <section
         className="relative overflow-hidden"
