@@ -1,7 +1,10 @@
 import { useState } from "react";
 import AppNav from "@/components/AppNav";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Download, User, Briefcase, GraduationCap, Code2, Plus, Trash2 } from "lucide-react";
+import {
+  Loader2, Download, User, Briefcase, GraduationCap, Code2,
+  Plus, Trash2, Github, Globe, Award, FolderGit2, Languages
+} from "lucide-react";
 
 interface CVData {
   name: string;
@@ -10,11 +13,20 @@ interface CVData {
   location: string;
   role: string;
   summary: string;
+  github: string;
+  linkedin: string;
+  telegram: string;
+  website: string;
   experience: { company: string; title: string; duration: string; description: string }[];
   education: { school: string; degree: string; year: string }[];
   skills: string[];
-  languages: string[];
+  spokenLanguages: { language: string; level: string }[];
+  certifications: { name: string; platform: string; link: string }[];
+  projects: { name: string; tech: string; description: string; link: string }[];
 }
+
+const CERT_PLATFORMS = ["Coursera", "Udemy", "edX", "LinkedIn Learning", "Google", "AWS", "Microsoft", "Meta", "Other"];
+const LANG_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2", "Native"];
 
 const CVBuilder = () => {
   const [cv, setCv] = useState<CVData>({
@@ -24,16 +36,25 @@ const CVBuilder = () => {
     location: "",
     role: "",
     summary: "",
+    github: "",
+    linkedin: "",
+    telegram: "",
+    website: "",
     experience: [{ company: "", title: "", duration: "", description: "" }],
     education: [{ school: "", degree: "", year: "" }],
     skills: [""],
-    languages: [""],
+    spokenLanguages: [{ language: "", level: "B1" }],
+    certifications: [{ name: "", platform: "Coursera", link: "" }],
+    projects: [{ name: "", tech: "", description: "", link: "" }],
   });
   const [generatedCV, setGeneratedCV] = useState("");
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<"form" | "preview">("form");
 
   const update = (field: keyof CVData, value: any) => setCv((prev) => ({ ...prev, [field]: value }));
+
+  const inputCls = "bg-background border border-border rounded-lg px-3 py-2 text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50";
+  const selectCls = "bg-background border border-border rounded-lg px-3 py-2 text-sm font-body text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50";
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -43,34 +64,43 @@ const CVBuilder = () => {
       setGeneratedCV(data.cvText);
       setStep("preview");
     } catch {
-      // Fallback: simple template
-      const text = buildSimpleCV(cv);
-      setGeneratedCV(text);
+      setGeneratedCV(buildSimpleCV(cv));
       setStep("preview");
     } finally {
       setLoading(false);
     }
   };
 
-  const buildSimpleCV = (cv: CVData) => `${cv.name}
+  const buildSimpleCV = (cv: CVData) => {
+    const links = [cv.linkedin, cv.github, cv.telegram, cv.website].filter(Boolean).join(" | ");
+    const contact = [cv.email, cv.phone, cv.location].filter(Boolean).join(" | ");
+    return `${cv.name.toUpperCase()}
 ${cv.role}
-${cv.email} | ${cv.phone} | ${cv.location}
+${contact}
+${links}
 
 SUMMARY
 ${cv.summary}
 
-EXPERIENCE
-${cv.experience.map((e) => `${e.title} @ ${e.company} (${e.duration})\n${e.description}`).join("\n\n")}
+WORK EXPERIENCE
+${cv.experience.map((e) => `${e.title} — ${e.company} (${e.duration})\n${e.description}`).join("\n\n")}
 
 EDUCATION
 ${cv.education.map((e) => `${e.degree} — ${e.school} (${e.year})`).join("\n")}
+
+PROJECTS
+${cv.projects.filter(p => p.name).map((p) => `${p.name} | ${p.tech}\n${p.description}${p.link ? `\n${p.link}` : ""}`).join("\n\n")}
+
+CERTIFICATES
+${cv.certifications.filter(c => c.name).map((c) => `${c.name} — ${c.platform}${c.link ? ` (${c.link})` : ""}`).join("\n")}
 
 SKILLS
 ${cv.skills.filter(Boolean).join(" • ")}
 
 LANGUAGES
-${cv.languages.filter(Boolean).join(" • ")}
+${cv.spokenLanguages.filter(l => l.language).map(l => `${l.language} — ${l.level}`).join(" | ")}
 `;
+  };
 
   const handleDownload = () => {
     const blob = new Blob([generatedCV], { type: "text/plain" });
@@ -85,7 +115,6 @@ ${cv.languages.filter(Boolean).join(" • ")}
     <div className="min-h-screen bg-background">
       <AppNav />
 
-      {/* Header */}
       <section className="relative py-14 text-center" style={{ background: "var(--gradient-hero)" }}>
         <div className="container mx-auto px-4">
           <div className="inline-flex items-center gap-2 bg-card/80 backdrop-blur-sm border border-border rounded-full px-4 py-1.5 mb-6">
@@ -103,6 +132,7 @@ ${cv.languages.filter(Boolean).join(" • ")}
       <div className="container mx-auto px-4 py-10 max-w-2xl">
         {step === "form" && (
           <div className="space-y-6">
+
             {/* Personal Info */}
             <div className="bg-card border border-border rounded-xl p-5">
               <div className="flex items-center gap-2 mb-4">
@@ -116,7 +146,7 @@ ${cv.languages.filter(Boolean).join(" • ")}
                     placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
                     value={cv[field]}
                     onChange={(e) => update(field, e.target.value)}
-                    className="bg-background border border-border rounded-lg px-3 py-2 text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    className={inputCls}
                   />
                 ))}
                 <textarea
@@ -124,8 +154,22 @@ ${cv.languages.filter(Boolean).join(" • ")}
                   value={cv.summary}
                   onChange={(e) => update("summary", e.target.value)}
                   rows={3}
-                  className="sm:col-span-2 bg-background border border-border rounded-lg px-3 py-2 text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 resize-none"
+                  className={`sm:col-span-2 ${inputCls} resize-none`}
                 />
+              </div>
+            </div>
+
+            {/* Social & Links */}
+            <div className="bg-card border border-border rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Github size={16} className="text-primary" />
+                <h3 className="font-body font-semibold text-foreground">Links & Profiles</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input placeholder="GitHub URL (e.g. github.com/username)" value={cv.github} onChange={(e) => update("github", e.target.value)} className={inputCls} />
+                <input placeholder="LinkedIn URL (e.g. linkedin.com/in/...)" value={cv.linkedin} onChange={(e) => update("linkedin", e.target.value)} className={inputCls} />
+                <input placeholder="Telegram (e.g. @username)" value={cv.telegram} onChange={(e) => update("telegram", e.target.value)} className={inputCls} />
+                <input placeholder="Personal website / portfolio URL" value={cv.website} onChange={(e) => update("website", e.target.value)} className={inputCls} />
               </div>
             </div>
 
@@ -143,11 +187,11 @@ ${cv.languages.filter(Boolean).join(" • ")}
               </div>
               {cv.experience.map((exp, i) => (
                 <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3 pb-3 border-b border-border last:border-0 last:pb-0 last:mb-0">
-                  <input placeholder="Company" value={exp.company} onChange={(e) => { const ex = [...cv.experience]; ex[i].company = e.target.value; update("experience", ex); }} className="bg-background border border-border rounded-lg px-3 py-2 text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50" />
-                  <input placeholder="Job Title" value={exp.title} onChange={(e) => { const ex = [...cv.experience]; ex[i].title = e.target.value; update("experience", ex); }} className="bg-background border border-border rounded-lg px-3 py-2 text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50" />
-                  <input placeholder="Duration (e.g. 2022–2024)" value={exp.duration} onChange={(e) => { const ex = [...cv.experience]; ex[i].duration = e.target.value; update("experience", ex); }} className="bg-background border border-border rounded-lg px-3 py-2 text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50" />
+                  <input placeholder="Company" value={exp.company} onChange={(e) => { const ex = [...cv.experience]; ex[i].company = e.target.value; update("experience", ex); }} className={inputCls} />
+                  <input placeholder="Job Title" value={exp.title} onChange={(e) => { const ex = [...cv.experience]; ex[i].title = e.target.value; update("experience", ex); }} className={inputCls} />
+                  <input placeholder="Duration (e.g. Jan 2026 – Present)" value={exp.duration} onChange={(e) => { const ex = [...cv.experience]; ex[i].duration = e.target.value; update("experience", ex); }} className={inputCls} />
                   <div className="flex gap-2">
-                    <textarea placeholder="Description" value={exp.description} onChange={(e) => { const ex = [...cv.experience]; ex[i].description = e.target.value; update("experience", ex); }} rows={2} className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 resize-none" />
+                    <textarea placeholder="Responsibilities & achievements..." value={exp.description} onChange={(e) => { const ex = [...cv.experience]; ex[i].description = e.target.value; update("experience", ex); }} rows={2} className={`flex-1 ${inputCls} resize-none`} />
                     {cv.experience.length > 1 && <button onClick={() => update("experience", cv.experience.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>}
                   </div>
                 </div>
@@ -165,36 +209,87 @@ ${cv.languages.filter(Boolean).join(" • ")}
               </div>
               {cv.education.map((edu, i) => (
                 <div key={i} className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
-                  <input placeholder="School" value={edu.school} onChange={(e) => { const ed = [...cv.education]; ed[i].school = e.target.value; update("education", ed); }} className="bg-background border border-border rounded-lg px-3 py-2 text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50" />
-                  <input placeholder="Degree" value={edu.degree} onChange={(e) => { const ed = [...cv.education]; ed[i].degree = e.target.value; update("education", ed); }} className="bg-background border border-border rounded-lg px-3 py-2 text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50" />
-                  <input placeholder="Year" value={edu.year} onChange={(e) => { const ed = [...cv.education]; ed[i].year = e.target.value; update("education", ed); }} className="bg-background border border-border rounded-lg px-3 py-2 text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50" />
+                  <input placeholder="University / School" value={edu.school} onChange={(e) => { const ed = [...cv.education]; ed[i].school = e.target.value; update("education", ed); }} className={inputCls} />
+                  <input placeholder="Degree / Specialization" value={edu.degree} onChange={(e) => { const ed = [...cv.education]; ed[i].degree = e.target.value; update("education", ed); }} className={inputCls} />
+                  <input placeholder="Year (e.g. 2022–Present)" value={edu.year} onChange={(e) => { const ed = [...cv.education]; ed[i].year = e.target.value; update("education", ed); }} className={inputCls} />
                 </div>
               ))}
             </div>
 
-            {/* Skills & Languages */}
+            {/* Projects */}
+            <div className="bg-card border border-border rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <FolderGit2 size={16} className="text-primary" />
+                  <h3 className="font-body font-semibold text-foreground">Projects</h3>
+                </div>
+                <button onClick={() => update("projects", [...cv.projects, { name: "", tech: "", description: "", link: "" }])} className="flex items-center gap-1 text-xs text-primary hover:opacity-80"><Plus size={12} /> Add</button>
+              </div>
+              {cv.projects.map((proj, i) => (
+                <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3 pb-3 border-b border-border last:border-0 last:pb-0 last:mb-0">
+                  <input placeholder="Project name" value={proj.name} onChange={(e) => { const pr = [...cv.projects]; pr[i].name = e.target.value; update("projects", pr); }} className={inputCls} />
+                  <input placeholder="Technologies used (e.g. Django, PostgreSQL)" value={proj.tech} onChange={(e) => { const pr = [...cv.projects]; pr[i].tech = e.target.value; update("projects", pr); }} className={inputCls} />
+                  <textarea placeholder="What you built and achieved..." value={proj.description} onChange={(e) => { const pr = [...cv.projects]; pr[i].description = e.target.value; update("projects", pr); }} rows={2} className={`${inputCls} resize-none`} />
+                  <div className="flex gap-2">
+                    <input placeholder="GitHub / live link (optional)" value={proj.link} onChange={(e) => { const pr = [...cv.projects]; pr[i].link = e.target.value; update("projects", pr); }} className={`flex-1 ${inputCls}`} />
+                    {cv.projects.length > 1 && <button onClick={() => update("projects", cv.projects.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Certifications */}
+            <div className="bg-card border border-border rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Award size={16} className="text-primary" />
+                  <h3 className="font-body font-semibold text-foreground">Certifications</h3>
+                </div>
+                <button onClick={() => update("certifications", [...cv.certifications, { name: "", platform: "Coursera", link: "" }])} className="flex items-center gap-1 text-xs text-primary hover:opacity-80"><Plus size={12} /> Add</button>
+              </div>
+              {cv.certifications.map((cert, i) => (
+                <div key={i} className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
+                  <input placeholder="Certificate name (e.g. Meta Back-end Developer)" value={cert.name} onChange={(e) => { const cs = [...cv.certifications]; cs[i].name = e.target.value; update("certifications", cs); }} className={`sm:col-span-1 ${inputCls}`} />
+                  <select value={cert.platform} onChange={(e) => { const cs = [...cv.certifications]; cs[i].platform = e.target.value; update("certifications", cs); }} className={selectCls}>
+                    {CERT_PLATFORMS.map((p) => <option key={p}>{p}</option>)}
+                  </select>
+                  <div className="flex gap-2">
+                    <input placeholder="Certificate link (optional)" value={cert.link} onChange={(e) => { const cs = [...cv.certifications]; cs[i].link = e.target.value; update("certifications", cs); }} className={`flex-1 ${inputCls}`} />
+                    {cv.certifications.length > 1 && <button onClick={() => update("certifications", cv.certifications.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Skills & Spoken Languages */}
             <div className="grid sm:grid-cols-2 gap-4">
+              {/* Technical Skills */}
               <div className="bg-card border border-border rounded-xl p-5">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2"><Code2 size={16} className="text-primary" /><h3 className="font-body font-semibold text-foreground text-sm">Skills</h3></div>
+                  <div className="flex items-center gap-2"><Code2 size={16} className="text-primary" /><h3 className="font-body font-semibold text-foreground text-sm">Technical Skills</h3></div>
                   <button onClick={() => update("skills", [...cv.skills, ""])} className="flex items-center gap-1 text-xs text-primary"><Plus size={12} /> Add</button>
                 </div>
                 {cv.skills.map((s, i) => (
                   <div key={i} className="flex gap-2 mb-2">
-                    <input placeholder="e.g. React" value={s} onChange={(e) => { const sk = [...cv.skills]; sk[i] = e.target.value; update("skills", sk); }} className="flex-1 bg-background border border-border rounded-lg px-3 py-1.5 text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50" />
+                    <input placeholder="e.g. Django REST Framework" value={s} onChange={(e) => { const sk = [...cv.skills]; sk[i] = e.target.value; update("skills", sk); }} className={`flex-1 ${inputCls}`} />
                     {cv.skills.length > 1 && <button onClick={() => update("skills", cv.skills.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive"><Trash2 size={12} /></button>}
                   </div>
                 ))}
               </div>
+
+              {/* Spoken Languages */}
               <div className="bg-card border border-border rounded-xl p-5">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2"><Code2 size={16} className="text-primary" /><h3 className="font-body font-semibold text-foreground text-sm">Languages</h3></div>
-                  <button onClick={() => update("languages", [...cv.languages, ""])} className="flex items-center gap-1 text-xs text-primary"><Plus size={12} /> Add</button>
+                  <div className="flex items-center gap-2"><Languages size={16} className="text-primary" /><h3 className="font-body font-semibold text-foreground text-sm">Spoken Languages</h3></div>
+                  <button onClick={() => update("spokenLanguages", [...cv.spokenLanguages, { language: "", level: "B1" }])} className="flex items-center gap-1 text-xs text-primary"><Plus size={12} /> Add</button>
                 </div>
-                {cv.languages.map((l, i) => (
+                {cv.spokenLanguages.map((l, i) => (
                   <div key={i} className="flex gap-2 mb-2">
-                    <input placeholder="e.g. Python" value={l} onChange={(e) => { const la = [...cv.languages]; la[i] = e.target.value; update("languages", la); }} className="flex-1 bg-background border border-border rounded-lg px-3 py-1.5 text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50" />
-                    {cv.languages.length > 1 && <button onClick={() => update("languages", cv.languages.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive"><Trash2 size={12} /></button>}
+                    <input placeholder="e.g. English" value={l.language} onChange={(e) => { const la = [...cv.spokenLanguages]; la[i].language = e.target.value; update("spokenLanguages", la); }} className={`flex-1 ${inputCls}`} />
+                    <select value={l.level} onChange={(e) => { const la = [...cv.spokenLanguages]; la[i].level = e.target.value; update("spokenLanguages", la); }} className={`w-20 ${selectCls}`}>
+                      {LANG_LEVELS.map((lvl) => <option key={lvl}>{lvl}</option>)}
+                    </select>
+                    {cv.spokenLanguages.length > 1 && <button onClick={() => update("spokenLanguages", cv.spokenLanguages.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive"><Trash2 size={12} /></button>}
                   </div>
                 ))}
               </div>
@@ -205,7 +300,9 @@ ${cv.languages.filter(Boolean).join(" • ")}
               disabled={!cv.name || !cv.role || loading}
               className="w-full py-3 bg-primary text-primary-foreground rounded-full font-body font-medium text-sm disabled:opacity-50 hover:bg-primary/90 transition-colors shadow-soft"
             >
-              {loading ? <span className="flex items-center justify-center gap-2"><Loader2 size={14} className="animate-spin" />AI is crafting your CV...</span> : "✦ Generate CV with AI"}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2"><Loader2 size={14} className="animate-spin" />AI is crafting your CV...</span>
+              ) : "✦ Generate CV with AI"}
             </button>
           </div>
         )}
