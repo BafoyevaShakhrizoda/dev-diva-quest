@@ -10,6 +10,7 @@ import SkillTest from "./pages/SkillTest";
 import Resources from "./pages/Resources";
 import CVBuilder from "./pages/CVBuilder";
 import Auth from "./pages/Auth";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/resources" element={<Resources />} />
             <Route path="/cv" element={<CVBuilder />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/profile" element={<Profile />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

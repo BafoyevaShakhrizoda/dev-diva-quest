@@ -1,5 +1,5 @@
 import { NavLink } from "@/components/NavLink";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { LogOut, User } from "lucide-react";
@@ -61,14 +61,17 @@ const AppNav = () => {
         <div className="flex items-center gap-2">
           {user ? (
             <>
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary border border-border">
+              <Link
+                to="/profile"
+                className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary border border-border hover:border-primary/30 hover:bg-primary/5 transition-all"
+              >
                 <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                   <User size={11} className="text-primary-foreground" />
                 </div>
                 <span className="text-xs font-body font-medium text-foreground truncate max-w-[100px]">
                   {user.email?.split("@")[0]}
                 </span>
-              </div>
+              </Link>
               <button
                 onClick={handleSignOut}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-body font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all border border-transparent hover:border-border"

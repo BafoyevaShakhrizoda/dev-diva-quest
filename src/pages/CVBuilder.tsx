@@ -1,6 +1,7 @@
 import { useState } from "react";
 import AppNav from "@/components/AppNav";
 import { supabase } from "@/integrations/supabase/client";
+import jsPDF from "jspdf";
 import {
   Loader2, Download, User, Briefcase, GraduationCap, Code2,
   Plus, Trash2, Github, Globe, Award, FolderGit2, Languages
@@ -103,12 +104,91 @@ ${cv.spokenLanguages.filter(l => l.language).map(l => `${l.language} — ${l.lev
   };
 
   const handleDownload = () => {
-    const blob = new Blob([generatedCV], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${cv.name.replace(/\s+/g, "_")}_CV.txt`;
-    a.click();
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 48;
+    const contentWidth = pageWidth - margin * 2;
+    let y = 56;
+
+    const addText = (text: string, fontSize: number, isBold = false, color: [number, number, number] = [30, 20, 50], indent = 0) => {
+      doc.setFontSize(fontSize);
+      doc.setFont("helvetica", isBold ? "bold" : "normal");
+      doc.setTextColor(...color);
+      const lines = doc.splitTextToSize(text, contentWidth - indent);
+      lines.forEach((line: string) => {
+        if (y > 780) { doc.addPage(); y = 48; }
+        doc.text(line, margin + indent, y);
+        y += fontSize * 1.5;
+      });
+    };
+
+    const addDivider = () => {
+      doc.setDrawColor(160, 120, 220);
+      doc.setLineWidth(0.5);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 10;
+    };
+
+    const addSection = (title: string) => {
+      y += 10;
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(110, 40, 180);
+      doc.text(title.toUpperCase(), margin, y);
+      y += 4;
+      addDivider();
+    };
+
+    // Header
+    addText(cv.name || "Your Name", 22, true, [30, 20, 50]);
+    if (cv.role) addText(cv.role, 13, false, [110, 40, 180]);
+    const contactLine = [cv.email, cv.phone, cv.location].filter(Boolean).join("  |  ");
+    if (contactLine) addText(contactLine, 9, false, [100, 90, 120]);
+    const links = [cv.linkedin && `LinkedIn: ${cv.linkedin}`, cv.github && `GitHub: ${cv.github}`, cv.website && cv.website].filter(Boolean).join("  |  ");
+    if (links) addText(links, 9, false, [100, 90, 120]);
+    y += 4;
+    addDivider();
+
+    if (cv.summary) { addSection("Summary"); addText(cv.summary, 10, false, [50, 40, 70]); }
+    if (cv.experience.some(e => e.company)) {
+      addSection("Work Experience");
+      cv.experience.filter(e => e.company).forEach(e => {
+        addText(`${e.title} — ${e.company}  (${e.duration})`, 10, true, [30, 20, 50]);
+        if (e.description) addText(e.description, 10, false, [80, 70, 100], 8);
+        y += 4;
+      });
+    }
+    if (cv.education.some(e => e.school)) {
+      addSection("Education");
+      cv.education.filter(e => e.school).forEach(e => {
+        addText(`${e.degree} — ${e.school} (${e.year})`, 10, false, [50, 40, 70]);
+      });
+    }
+    if (cv.projects.some(p => p.name)) {
+      addSection("Projects");
+      cv.projects.filter(p => p.name).forEach(p => {
+        addText(`${p.name}  |  ${p.tech}`, 10, true, [30, 20, 50]);
+        if (p.description) addText(p.description, 10, false, [80, 70, 100], 8);
+        if (p.link) addText(p.link, 9, false, [110, 40, 180], 8);
+        y += 4;
+      });
+    }
+    if (cv.certifications.some(c => c.name)) {
+      addSection("Certifications");
+      cv.certifications.filter(c => c.name).forEach(c => {
+        addText(`${c.name} — ${c.platform}${c.link ? `  (${c.link})` : ""}`, 10, false, [50, 40, 70]);
+      });
+    }
+    if (cv.skills.some(Boolean)) {
+      addSection("Skills");
+      addText(cv.skills.filter(Boolean).join("  •  "), 10, false, [50, 40, 70]);
+    }
+    if (cv.spokenLanguages.some(l => l.language)) {
+      addSection("Languages");
+      addText(cv.spokenLanguages.filter(l => l.language).map(l => `${l.language} — ${l.level}`).join("   |   "), 10, false, [50, 40, 70]);
+    }
+
+    doc.save(`${(cv.name || "CV").replace(/\s+/g, "_")}_CV.pdf`);
   };
 
   return (

@@ -78,6 +78,22 @@ const SkillTest = () => {
     setAnswers((prev) => ({ ...prev, [qIndex]: aIndex }));
   };
 
+  const saveResult = async (level: Level, feedback: string, score: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const career = careers.find((c) => c.id === selectedRole);
+    const langLabel = availableLanguages.find((l) => l.id === selectedLanguage)?.label;
+    await supabase.from("skill_test_results").insert({
+      user_id: user.id,
+      role: career?.title || selectedRole || "",
+      language: langLabel || null,
+      tier: selectedTier || "",
+      level,
+      score,
+      feedback,
+    });
+  };
+
   const handleSubmit = async () => {
     if (Object.keys(answers).length < roleQuestions.length) return;
     setLoading(true);
@@ -85,6 +101,7 @@ const SkillTest = () => {
     const langLabel = availableLanguages.find((l) => l.id === selectedLanguage)?.label;
     const correct = roleQuestions.filter((q, i) => answers[i] === q.correct).length;
     const pct = correct / roleQuestions.length;
+    const scoreStr = `${correct}/${roleQuestions.length}`;
 
     try {
       const { data, error } = await supabase.functions.invoke("evaluate-skill", {
@@ -93,17 +110,20 @@ const SkillTest = () => {
           tier: selectedTier,
           questions: roleQuestions.map(q => ({ q: q.q, options: q.options })),
           answers,
-          score: `${correct}/${roleQuestions.length}`,
+          score: scoreStr,
         },
       });
       if (error) throw error;
       setResult(data);
+      await saveResult(data.level, data.feedback, scoreStr);
     } catch {
       let level: Level = "Beginner";
       if (pct >= 0.85) level = "Senior";
       else if (pct >= 0.65) level = "Middle";
       else if (pct >= 0.4) level = "Junior";
-      setResult({ level, feedback: `You answered ${correct} out of ${roleQuestions.length} correctly on the ${selectedTier} tier. ${pct >= 0.7 ? "Great work! You demonstrate solid knowledge at this level." : "Keep practicing — review the topics you found challenging."}` });
+      const feedback = `You answered ${correct} out of ${roleQuestions.length} correctly on the ${selectedTier} tier. ${pct >= 0.7 ? "Great work! You demonstrate solid knowledge at this level." : "Keep practicing — review the topics you found challenging."}`;
+      setResult({ level, feedback });
+      await saveResult(level, feedback, scoreStr);
     } finally {
       setLoading(false);
       setSubmitted(true);
