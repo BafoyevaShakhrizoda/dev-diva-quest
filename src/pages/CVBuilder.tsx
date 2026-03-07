@@ -1,6 +1,7 @@
 import { useState } from "react";
 import AppNav from "@/components/AppNav";
 import { supabase } from "@/integrations/supabase/client";
+import jsPDF from "jspdf";
 import {
   Loader2, Download, User, Briefcase, GraduationCap, Code2,
   Plus, Trash2, Github, Globe, Award, FolderGit2, Languages
