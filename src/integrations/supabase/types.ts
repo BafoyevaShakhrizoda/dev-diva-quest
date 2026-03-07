@@ -41,6 +41,42 @@ export type Database = {
         }
         Relationships: []
       }
+      skill_test_results: {
+        Row: {
+          created_at: string
+          feedback: string | null
+          id: string
+          language: string | null
+          level: string
+          role: string
+          score: string
+          tier: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          language?: string | null
+          level: string
+          role: string
+          score: string
+          tier: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          language?: string | null
+          level?: string
+          role?: string
+          score?: string
+          tier?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
