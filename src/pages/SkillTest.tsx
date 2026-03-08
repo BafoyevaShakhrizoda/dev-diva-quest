@@ -2,8 +2,15 @@ import { useState } from "react";
 import { careers } from "@/data/careers";
 import { roleQuestionsMap, backendLanguageQuestionsMap, type Tier, type Level } from "@/data/skillQuestions";
 import AppNav from "@/components/AppNav";
+import AppFooter from "@/components/AppFooter";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle, Circle, Loader2, ChevronRight } from "lucide-react";
+
+const tierLevelCap: Record<Tier, Level[]> = {
+  junior: ["Beginner", "Junior"],
+  middle: ["Junior", "Middle"],
+  senior: ["Middle", "Senior"],
+};
 
 const roleLanguages: Record<string, { id: string; label: string; emoji: string }[]> = {
   backend: [
