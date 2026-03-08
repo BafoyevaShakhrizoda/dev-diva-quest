@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AppNav from "@/components/AppNav";
-import AppFooter from "@/components/AppFooter";
+
 import {
   User, Mail, Calendar, Trophy, Code2, ChevronRight,
   Loader2, BookOpen, Settings, ArrowLeft, Camera
@@ -339,7 +339,12 @@ const Profile = () => {
         )}
       </div>
 
-      <AppFooter />
+      <footer className="border-t border-border bg-card py-8 mt-8">
+        <div className="container mx-auto px-4 text-center">
+          <p className="font-display text-base font-bold text-foreground mb-1">Dev<span className="text-gradient">Girlzz</span></p>
+          <p className="text-xs font-body text-muted-foreground">Built for every IT woman 💜</p>
+        </div>
+      </footer>
     </div>
   );
 };

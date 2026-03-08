@@ -4,7 +4,7 @@ import { careers, categories, CareerPath, CareerCategory } from "@/data/careers"
 import CareerCard from "@/components/CareerCard";
 import CareerDetail from "@/components/CareerDetail";
 import AppNav from "@/components/AppNav";
-import AppFooter from "@/components/AppFooter";
+
 
 const Index = () => {
   const [selected, setSelected] = useState<CareerPath | null>(null);
@@ -137,7 +137,14 @@ const Index = () => {
         )}
       </section>
 
-      <AppFooter />
+      <footer className="border-t border-border bg-card py-10 mt-8">
+        <div className="container mx-auto px-4 text-center">
+          <p className="font-display text-lg font-bold text-foreground mb-1">
+            Dev<span className="text-gradient">Girlzz</span>
+          </p>
+          <p className="text-xs font-body text-muted-foreground">Built for every IT woman 💜 Your journey starts here.</p>
+        </div>
+      </footer>
 
       {/* Detail Modal */}
       {selected && (
