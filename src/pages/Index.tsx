@@ -4,7 +4,7 @@ import { careers, categories, CareerPath, CareerCategory } from "@/data/careers"
 import CareerCard from "@/components/CareerCard";
 import CareerDetail from "@/components/CareerDetail";
 import AppNav from "@/components/AppNav";
-import AppFooter from "@/components/AppFooter";
+
 
 const Index = () => {
   const [selected, setSelected] = useState<CareerPath | null>(null);

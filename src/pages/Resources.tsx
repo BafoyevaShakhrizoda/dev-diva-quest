@@ -1,5 +1,5 @@
 import AppNav from "@/components/AppNav";
-import AppFooter from "@/components/AppFooter";
+
 import { ExternalLink, BookOpen, Code2, FileText } from "lucide-react";
 import { careers } from "@/data/careers";
 import { useState } from "react";

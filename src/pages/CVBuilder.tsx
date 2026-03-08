@@ -1,6 +1,6 @@
 import { useState } from "react";
 import AppNav from "@/components/AppNav";
-import AppFooter from "@/components/AppFooter";
+
 import { supabase } from "@/integrations/supabase/client";
 import jsPDF from "jspdf";
 import {
