@@ -170,12 +170,7 @@ const Resources = () => {
         )}
       </div>
 
-      <footer className="border-t border-border bg-card/50 py-8 mt-4">
-        <div className="container mx-auto px-4 text-center">
-          <p className="font-display text-lg text-foreground mb-1">Built for every IT girl 🌸</p>
-          <p className="text-xs font-body text-muted-foreground">Your journey in tech starts with a single click</p>
-        </div>
-      </footer>
+      <AppFooter />
     </div>
   );
 };
