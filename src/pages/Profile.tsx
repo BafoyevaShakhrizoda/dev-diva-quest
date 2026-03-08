@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AppNav from "@/components/AppNav";
+import AppFooter from "@/components/AppFooter";
 import {
   User, Mail, Calendar, Trophy, Code2, ChevronRight,
-  Loader2, BookOpen, Settings, ArrowLeft
+  Loader2, BookOpen, Settings, ArrowLeft, Camera
 } from "lucide-react";
 
 interface TestResult {
@@ -37,11 +38,15 @@ const tierBadge: Record<string, string> = {
 const Profile = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [results, setResults] = useState<TestResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [fullName, setFullName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
   const [savingName, setSavingName] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     if (!user) { navigate("/auth"); return; }
@@ -51,7 +56,7 @@ const Profile = () => {
   const fetchData = async () => {
     setLoading(true);
     const [profileRes, testRes] = await Promise.all([
-      supabase.from("profiles").select("full_name").eq("user_id", user!.id).single(),
+      supabase.from("profiles").select("full_name, avatar_url").eq("user_id", user!.id).single(),
       supabase
         .from("skill_test_results")
         .select("*")
@@ -59,6 +64,7 @@ const Profile = () => {
         .order("created_at", { ascending: false }),
     ]);
     if (profileRes.data?.full_name) setFullName(profileRes.data.full_name);
+    if (profileRes.data?.avatar_url) setAvatarUrl(profileRes.data.avatar_url);
     if (testRes.data) setResults(testRes.data as TestResult[]);
     setLoading(false);
   };
@@ -71,6 +77,29 @@ const Profile = () => {
     setSavingName(false);
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const filePath = `avatars/${user.id}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("mybucket1")
+        .upload(filePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from("mybucket1").getPublicUrl(filePath);
+      const publicUrl = urlData.publicUrl + `?t=${Date.now()}`;
+      await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("user_id", user.id);
+      setAvatarUrl(publicUrl);
+    } catch (err) {
+      console.error("Avatar upload failed:", err);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const bestResults = results.reduce((acc, r) => {
     const key = `${r.role}${r.language ? `-${r.language}` : ""}`;
     if (!acc[key] || getLevelNum(r.level) > getLevelNum(acc[key].level)) acc[key] = r;
@@ -80,6 +109,8 @@ const Profile = () => {
   const topLevel = results.length > 0
     ? results.reduce((best, r) => getLevelNum(r.level) > getLevelNum(best.level) ? r : best)
     : null;
+
+  const initials = (fullName || user?.email || "?")[0].toUpperCase();
 
   return (
     <div className="min-h-screen bg-background">
@@ -93,12 +124,45 @@ const Profile = () => {
             <ArrowLeft size={14} /> Back to Dashboard
           </Link>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-            {/* Avatar */}
-            <div className="w-20 h-20 rounded-3xl gradient-primary flex items-center justify-center shadow-soft flex-shrink-0">
-              <span className="text-3xl text-white font-display font-bold">
-                {(fullName || user?.email || "?")[0].toUpperCase()}
-              </span>
+            {/* Avatar with upload */}
+            <div className="relative flex-shrink-0 group">
+              <div className="w-20 h-20 rounded-3xl overflow-hidden shadow-soft border-2 border-primary/20">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full gradient-primary flex items-center justify-center">
+                    <span className="text-3xl text-white font-display font-bold">{initials}</span>
+                  </div>
+                )}
+              </div>
+              {/* Upload overlay */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="absolute inset-0 rounded-3xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                title="Change photo"
+              >
+                {uploadingAvatar
+                  ? <Loader2 size={18} className="text-white animate-spin" />
+                  : <Camera size={18} className="text-white" />
+                }
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarUpload}
+              />
+              {/* Small camera badge */}
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary border-2 border-background flex items-center justify-center cursor-pointer shadow-sm"
+              >
+                <Camera size={10} className="text-white" />
+              </div>
             </div>
+
             <div className="flex-1">
               {editingName ? (
                 <div className="flex items-center gap-2 mb-1">
@@ -107,6 +171,7 @@ const Profile = () => {
                     onChange={(e) => setFullName(e.target.value)}
                     className="font-display text-2xl font-bold bg-background border border-primary/40 rounded-xl px-3 py-1 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                     autoFocus
+                    onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
                   />
                   <button
                     onClick={handleSaveName}
@@ -139,6 +204,7 @@ const Profile = () => {
                   Top Level: {topLevel.level} — {topLevel.role}
                 </div>
               )}
+              <p className="text-xs font-body text-muted-foreground mt-1.5 opacity-70">Click on photo to change avatar</p>
             </div>
           </div>
         </div>
@@ -273,12 +339,7 @@ const Profile = () => {
         )}
       </div>
 
-      <footer className="border-t border-border bg-card py-8 mt-8">
-        <div className="container mx-auto px-4 text-center">
-          <p className="font-display text-base font-bold text-foreground mb-1">Dev<span className="text-gradient">Girlzz</span></p>
-          <p className="text-xs font-body text-muted-foreground">Built for every IT woman 💜</p>
-        </div>
-      </footer>
+      <AppFooter />
     </div>
   );
 };

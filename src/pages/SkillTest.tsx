@@ -2,8 +2,15 @@ import { useState } from "react";
 import { careers } from "@/data/careers";
 import { roleQuestionsMap, backendLanguageQuestionsMap, type Tier, type Level } from "@/data/skillQuestions";
 import AppNav from "@/components/AppNav";
+import AppFooter from "@/components/AppFooter";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle, Circle, Loader2, ChevronRight } from "lucide-react";
+
+const tierLevelCap: Record<Tier, Level[]> = {
+  junior: ["Beginner", "Junior"],
+  middle: ["Junior", "Middle"],
+  senior: ["Middle", "Senior"],
+};
 
 const roleLanguages: Record<string, { id: string; label: string; emoji: string }[]> = {
   backend: [
@@ -114,13 +121,21 @@ const SkillTest = () => {
         },
       });
       if (error) throw error;
-      setResult(data);
-      await saveResult(data.level, data.feedback, scoreStr);
+      // Enforce tier cap client-side as well
+      const allowed = selectedTier ? tierLevelCap[selectedTier] : null;
+      let level: Level = data.level;
+      if (allowed && !allowed.includes(level)) level = allowed[allowed.length - 1];
+      setResult({ level, feedback: data.feedback });
+      await saveResult(level, data.feedback, scoreStr);
     } catch {
-      let level: Level = "Beginner";
-      if (pct >= 0.85) level = "Senior";
-      else if (pct >= 0.65) level = "Middle";
-      else if (pct >= 0.4) level = "Junior";
+      // Fallback evaluation capped to tier
+      const allowed = selectedTier ? tierLevelCap[selectedTier] : (["Beginner", "Junior", "Middle", "Senior"] as Level[]);
+      let level: Level = allowed[0];
+      if (pct >= 0.7 && allowed.includes("Senior")) level = "Senior";
+      else if (pct >= 0.7 && allowed.includes("Middle")) level = "Middle";
+      else if (pct >= 0.7 && allowed.includes("Junior")) level = "Junior";
+      else if (pct >= 0.4 && allowed.length > 1) level = allowed[1] as Level;
+      else level = allowed[0] as Level;
       const feedback = `You answered ${correct} out of ${roleQuestions.length} correctly on the ${selectedTier} tier. ${pct >= 0.7 ? "Great work! You demonstrate solid knowledge at this level." : "Keep practicing — review the topics you found challenging."}`;
       setResult({ level, feedback });
       await saveResult(level, feedback, scoreStr);
@@ -297,12 +312,7 @@ const SkillTest = () => {
         )}
       </div>
 
-      <footer className="border-t border-border bg-card/50 py-8 mt-8">
-        <div className="container mx-auto px-4 text-center">
-          <p className="font-display text-lg text-foreground mb-1">Built for every IT girl 🌸</p>
-          <p className="text-xs font-body text-muted-foreground">Your journey in tech starts with a single click</p>
-        </div>
-      </footer>
+      <AppFooter />
     </div>
   );
 };
