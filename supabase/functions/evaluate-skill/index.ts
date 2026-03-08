@@ -3,40 +3,65 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+const tierLevelRange: Record<string, { levels: string[]; maxLevel: string; context: string }> = {
+  junior: {
+    levels: ['Beginner', 'Junior'],
+    maxLevel: 'Junior',
+    context: 'This was a JUNIOR tier test. The maximum achievable level is Junior. Even with a perfect score, the user shows Junior-level competency.',
+  },
+  middle: {
+    levels: ['Junior', 'Middle'],
+    maxLevel: 'Middle',
+    context: 'This was a MIDDLE tier test. The maximum achievable level is Middle. Even with a perfect score, the user shows Middle-level competency.',
+  },
+  senior: {
+    levels: ['Middle', 'Senior'],
+    maxLevel: 'Senior',
+    context: 'This was a SENIOR tier test. The user can achieve up to Senior level.',
+  },
+};
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { role, questions, answers } = await req.json();
+    const { role, tier, questions, answers, score } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
+    const tierInfo = tierLevelRange[tier] || tierLevelRange['junior'];
     const answersText = questions.map((q: any, i: number) =>
       `Q${i + 1}: ${q.q}\nSelected answer: ${q.options[answers[i]]}`
     ).join('\n\n');
 
     const prompt = `You are an expert IT career evaluator. A user just took a skill test for the role of "${role}".
 
+Tier selected: ${tier.toUpperCase()}
+Score: ${score}
+
+IMPORTANT CONSTRAINT: ${tierInfo.context}
+You MUST only assign one of these levels: ${tierInfo.levels.join(' or ')}.
+Do NOT assign a level outside this range, even if performance seems higher.
+
 Here are their answers:
 ${answersText}
 
 The correct answers are always the FIRST option (index 0) for each question.
 
-Based on their answers, evaluate their skill level. Assign one of: Beginner, Junior, Middle, Senior.
+Based on their performance within this tier, assign the appropriate level from: ${tierInfo.levels.join(', ')}.
 
-Guidelines:
-- Beginner: 0-1 correct (just starting out)
-- Junior: 2 correct (basic knowledge)  
-- Middle: 3-4 correct (solid understanding)
-- Senior: 5 correct (expert-level mastery)
+Guidelines for ${tier} tier:
+${tier === 'junior' ? '- Beginner: 0-2 correct\n- Junior: 3+ correct' : ''}
+${tier === 'middle' ? '- Junior: 0-2 correct\n- Middle: 3+ correct' : ''}
+${tier === 'senior' ? '- Middle: 0-2 correct\n- Senior: 3+ correct' : ''}
 
 Respond with a JSON object exactly like this:
 {
-  "level": "Junior",
-  "feedback": "2-3 sentences of personalized, encouraging feedback explaining the level and what to focus on next. Be warm and supportive like a mentor to a young woman starting her career."
+  "level": "${tierInfo.levels[0]}",
+  "feedback": "2-3 sentences of personalized, encouraging feedback. Acknowledge the tier they attempted. Be warm and supportive like a mentor to a young woman starting her career. Reference what to study next."
 }`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -65,6 +90,12 @@ Respond with a JSON object exactly like this:
     const aiData = await response.json();
     const content = aiData.choices?.[0]?.message?.content;
     const parsed = JSON.parse(content);
+
+    // Enforce tier cap regardless of what AI returns
+    const allowedLevels = tierInfo.levels;
+    if (!allowedLevels.includes(parsed.level)) {
+      parsed.level = tierInfo.maxLevel;
+    }
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
