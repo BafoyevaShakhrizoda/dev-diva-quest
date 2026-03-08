@@ -170,10 +170,12 @@ const Resources = () => {
         )}
       </div>
 
-      <footer className="border-t border-border bg-card/50 py-8 mt-4">
+      <footer className="border-t border-border bg-card py-10 mt-4">
         <div className="container mx-auto px-4 text-center">
-          <p className="font-display text-lg text-foreground mb-1">Built for every IT girl 🌸</p>
-          <p className="text-xs font-body text-muted-foreground">Your journey in tech starts with a single click</p>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <span className="font-display text-lg font-bold text-foreground">Dev<span className="text-gradient">Girlzz</span></span>
+          </div>
+          <p className="text-xs font-body text-muted-foreground">Built for every IT woman 💜 Your journey starts here.</p>
         </div>
       </footer>
     </div>
