@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AppNav from "@/components/AppNav";
+import AppFooter from "@/components/AppFooter";
 import {
   User, Mail, Calendar, Trophy, Code2, ChevronRight,
-  Loader2, BookOpen, Settings, ArrowLeft
+  Loader2, BookOpen, Settings, ArrowLeft, Camera, Upload
 } from "lucide-react";
 
 interface TestResult {

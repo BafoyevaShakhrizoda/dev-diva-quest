@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ExternalLink, Newspaper, Calendar, MapPin, RefreshCw, TrendingUp, Zap } from "lucide-react";
 import { firecrawlApi } from "@/lib/api/firecrawl";
 import AppNav from "@/components/AppNav";
+import AppFooter from "@/components/AppFooter";
 import { useAuth } from "@/hooks/useAuth";
 
 interface NewsItem {
