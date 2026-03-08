@@ -121,13 +121,21 @@ const SkillTest = () => {
         },
       });
       if (error) throw error;
-      setResult(data);
-      await saveResult(data.level, data.feedback, scoreStr);
+      // Enforce tier cap client-side as well
+      const allowed = selectedTier ? tierLevelCap[selectedTier] : null;
+      let level: Level = data.level;
+      if (allowed && !allowed.includes(level)) level = allowed[allowed.length - 1];
+      setResult({ level, feedback: data.feedback });
+      await saveResult(level, data.feedback, scoreStr);
     } catch {
-      let level: Level = "Beginner";
-      if (pct >= 0.85) level = "Senior";
-      else if (pct >= 0.65) level = "Middle";
-      else if (pct >= 0.4) level = "Junior";
+      // Fallback evaluation capped to tier
+      const allowed = selectedTier ? tierLevelCap[selectedTier] : (["Beginner", "Junior", "Middle", "Senior"] as Level[]);
+      let level: Level = allowed[0];
+      if (pct >= 0.7 && allowed.includes("Senior")) level = "Senior";
+      else if (pct >= 0.7 && allowed.includes("Middle")) level = "Middle";
+      else if (pct >= 0.7 && allowed.includes("Junior")) level = "Junior";
+      else if (pct >= 0.4 && allowed.length > 1) level = allowed[1] as Level;
+      else level = allowed[0] as Level;
       const feedback = `You answered ${correct} out of ${roleQuestions.length} correctly on the ${selectedTier} tier. ${pct >= 0.7 ? "Great work! You demonstrate solid knowledge at this level." : "Keep practicing — review the topics you found challenging."}`;
       setResult({ level, feedback });
       await saveResult(level, feedback, scoreStr);
