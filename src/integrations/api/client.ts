@@ -1,5 +1,4 @@
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://sizning-backend.onrender.com';
 
 export const apiClient = {
   async get(endpoint: string) {
