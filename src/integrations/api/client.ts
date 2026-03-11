@@ -1,6 +1,29 @@
-// API client for Django backend
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+export const apiClient = {
+  async get(endpoint: string) {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.json();
+  },
+
+  async post(endpoint: string, data: any) {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  }
+};
 class ApiClient {
   private baseURL: string;
   private token: string | null = null;
@@ -129,7 +152,7 @@ class ApiClient {
     telegram?: string;
     website?: string;
     summary: string;
-    experience?: any[];
+    experience?: string;
     education?: any[];
     projects?: any[];
     certifications?: any[];

@@ -38,6 +38,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', 
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -45,7 +46,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # QO'SHING
 
 ]
 
@@ -124,19 +124,16 @@ REST_FRAMEWORK = {
     ]
 }
 
-# Agar DEBUG=True bo'lsa, browsable API ni yoqish
 if DEBUG:
     REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = [
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
     ]
 
-CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'https://devgirlzz.com.uz',
-    'https://www.devgirlzz.com.uz',
-])
+CORS_ALLOWED_ORIGINS = [
+    'https://devgirlzz.vercel.app',  # Vercel project URL'ingiz
+    'http://localhost:3000',          # Local development
+]
 
 CORS_ALLOW_CREDENTIALS = True
 
