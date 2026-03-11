@@ -131,10 +131,11 @@ if DEBUG:
     ]
 
 CORS_ALLOWED_ORIGINS = [
-    'https://devgirlzz.vercel.app',  # Vercel project URL'ingiz
-    'http://localhost:3000',          # Local development
+    "https://devgirlzz.vercel.app",
+    "http://localhost:3000",
 ]
 
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 
 OPENAI_API_KEY = env('OPENAI_API_KEY', default='')
