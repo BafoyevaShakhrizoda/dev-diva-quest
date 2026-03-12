@@ -74,14 +74,12 @@ class ApiClient {
 
   // Auth endpoints
   async register(data: {
-    username: string;
     email: string;
     password: string;
-    password_confirm: string;
+    username: string;
     first_name?: string;
     last_name?: string;
     phone?: string;
-    location?: string;
   }) {
     return this.request('/users/register/', {
       method: 'POST',
@@ -89,19 +87,10 @@ class ApiClient {
     });
   }
 
-  async login(email: string, password: string) {
-    return this.request('/users/login/', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-  }
-
   async logout() {
-    const response = await this.request('/users/logout/', {
+    return this.request('/users/logout/', {
       method: 'POST',
     });
-    this.clearToken();
-    return response;
   }
 
   async getProfile() {
@@ -109,8 +98,8 @@ class ApiClient {
   }
 
   async updateProfile(data: any) {
-    return this.request('/users/profile/', {
-      method: 'PUT',
+    return this.request('/users/profile/update/', {
+      method: 'PATCH',
       body: JSON.stringify(data),
     });
   }
@@ -139,36 +128,23 @@ class ApiClient {
     return this.request(`/skills/tests/${testId}/`);
   }
 
+  async getTestResults() {
+    return this.request('/skills/results/');
+  }
+
   // CV endpoints
-  async generateCV(data: {
-    name: string;
-    role: string;
-    email: string;
-    phone?: string;
-    location: string;
-    github?: string;
-    linkedin?: string;
-    telegram?: string;
-    website?: string;
-    summary: string;
-    experience?: string;
-    education?: any[];
-    projects?: any[];
-    certifications?: any[];
-    skills?: string[];
-    languages?: any[];
-  }) {
+  async generateCV(data: any) {
     return this.request('/cv/generate/', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async getMyCVs() {
-    return this.request('/cv/my-cvs/');
+  async getCVs() {
+    return this.request('/cv/cvs/');
   }
 
-  async getCVDetail(cvId: number) {
+  async getCV(cvId: number) {
     return this.request(`/cv/cvs/${cvId}/`);
   }
 
@@ -204,9 +180,48 @@ class ApiClient {
     return this.request(url);
   }
 
+  async applyJob(jobId: number, data: {
+    cv?: number;
+    cover_letter?: string;
+  }) {
+    return this.request(`/jobs/apply/${jobId}/`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getMyApplications() {
+    return this.request('/jobs/my-applications/');
+  }
+
+  async getJobApplications(jobId: number) {
+    return this.request(`/jobs/applications/${jobId}/`);
+  }
+
+  async updateApplicationStatus(applicationId: number, status: string) {
+    return this.request(`/jobs/applications/${applicationId}/status/`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  }
+
   async saveJobMatch(jobId: number) {
     return this.request(`/jobs/save/${jobId}/`, {
       method: 'POST',
+    });
+  }
+
+  // Email verification endpoints
+  async verifyEmail(uidb64: string, token: string) {
+    return this.request(`/users/verify-email/${uidb64}/${token}/`, {
+      method: 'POST',
+    });
+  }
+
+  async resendVerification(email: string) {
+    return this.request('/users/resend-verification/', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
     });
   }
 }

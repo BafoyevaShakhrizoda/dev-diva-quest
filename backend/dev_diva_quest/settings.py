@@ -17,8 +17,8 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[
     'localhost',
     '127.0.0.1',
     'devgirlzz.com.uz',
-    '.onrender.com',  # Render subdomainlari uchun
-    os.environ.get('RENDER_EXTERNAL_HOSTNAME', ''),  # Render avtomatik beradi
+    '.onrender.com',  
+    os.environ.get('RENDER_EXTERNAL_HOSTNAME', ''),  
 ])
 
 INSTALLED_APPS = [
@@ -69,15 +69,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'dev_diva_quest.wsgi.application'
 
-# Database
-DATABASE_URL = env('DATABASE_URL', default='')
 
 DATABASE_URL = env('DATABASE_URL', default='')
 
-if DATABASE_URL:
+# Database configuration
+if 'DATABASE_URL' in os.environ:
     import dj_database_url
     DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+        'default': dj_database_url.parse(env('DATABASE_URL'))
     }
 else:
     DATABASES = {
@@ -88,12 +87,31 @@ else:
     }
 
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
 ]
+
 AUTH_USER_MODEL = 'users.User'
+
+# Email configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@devgirlzz.com.uz')
+
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True

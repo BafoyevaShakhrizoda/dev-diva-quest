@@ -42,6 +42,31 @@ class Job(models.Model):
         return f"{self.title} at {self.company}"
 
 
+class JobApplication(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('reviewed', 'Reviewed'),
+        ('shortlisted', 'Shortlisted'),
+        ('rejected', 'Rejected'),
+        ('accepted', 'Accepted'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='job_applications')
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='applications')
+    cv = models.ForeignKey('cv.CV', on_delete=models.SET_NULL, null=True, blank=True)
+    cover_letter = models.TextField(blank=True, max_length=1000)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    applied_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-applied_at']
+        unique_together = ['user', 'job']  # User can apply only once per job
+
+    def __str__(self):
+        return f"{self.user.email} - {self.job.title}"
+
+
 class JobMatch(models.Model):
     LEVEL_CHOICES = [
         ('beginner', 'Beginner'),

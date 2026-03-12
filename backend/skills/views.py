@@ -71,14 +71,16 @@ def evaluate_skill(request):
             level = 'senior'
         
         # Generate AI feedback
-        client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-        
-        answers_text = '\n\n'.join([
-            f"Q{i+1}: {q['question_text']}\nSelected answer: {q['options'][answers[i]]}"
-            for i, q in enumerate(questions)
-        ])
-        
-        prompt = f"""You are an expert IT career evaluator. A user just took a skill test for the role of "{role}".
+        if settings.OPENAI_API_KEY and settings.OPENAI_API_KEY != 'your-openai-api-key-here':
+            try:
+                client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+                
+                answers_text = '\n\n'.join([
+                    f"Q{i+1}: {q['question_text']}\nSelected answer: {q['options'][answers[i]]}"
+                    for i, q in enumerate(questions)
+                ])
+                
+                prompt = f"""You are an expert IT career evaluator. A user just took a skill test for the role of "{role}".
 
 Here are their answers:
 {answers_text}
@@ -104,14 +106,25 @@ Respond with a JSON object exactly like this:
   "feedback": "2-3 sentences of personalized, encouraging feedback explaining their {score_percentage:.1f}% score and {level} level. Include specific advice for improvement and what to focus on next. Be warm and supportive like a mentor to a young woman starting her career."
 }}"""
 
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"}
-        )
-        
-        ai_response = json.loads(response.choices[0].message.content)
-        feedback = ai_response.get('feedback', 'Great job on completing the skill test!')
+                response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "user", "content": prompt}],
+                    response_format={"type": "json_object"}
+                )
+                
+                ai_response = json.loads(response.choices[0].message.content)
+                feedback = ai_response.get('feedback', f'Great job on completing the {role} skill test! You scored {score_percentage:.1f}% and achieved {level} level.')
+            except Exception as e:
+                feedback = f'Great job on completing the {role} skill test! You scored {score_percentage:.1f}% and achieved {level} level. Keep practicing to improve your skills!'
+        else:
+            # Fallback feedback without AI
+            feedback_messages = {
+                'beginner': f'Great start on your {role} journey! You scored {score_percentage:.1f}% at Beginner level. Focus on learning the fundamentals and practice regularly.',
+                'junior': f'Good progress! You scored {score_percentage:.1f}% at Junior level in {role}. Continue building your skills and try more complex projects.',
+                'middle': f'Impressive work! You scored {score_percentage:.1f}% at Middle level in {role}. You have solid knowledge - keep challenging yourself!',
+                'senior': f'Excellent performance! You scored {score_percentage:.1f}% at Senior level in {role}. You have expert-level knowledge!'
+            }
+            feedback = feedback_messages.get(level, f'Great job! You scored {score_percentage:.1f}% at {level} level.')
         
         # Save test result
         skill_test = SkillTest.objects.create(

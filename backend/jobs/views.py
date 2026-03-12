@@ -4,9 +4,9 @@ from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.db.models import Q, Avg
-from .models import Job, JobMatch
+from .models import Job, JobMatch, JobApplication
 from skills.models import SkillTest
-from .serializers import JobSerializer, JobMatchSerializer
+from .serializers import JobSerializer, JobMatchSerializer, JobApplicationSerializer, JobApplicationCreateSerializer
 
 
 @api_view(['GET'])
@@ -94,8 +94,113 @@ def all_jobs(request):
     if location:
         jobs = jobs.filter(location__icontains=location)
     
-    serializer = JobSerializer(jobs[:50], many=True)  # Limit to 50 results
+    # Add context for has_applied field
+    serializer = JobSerializer(jobs[:50], many=True, context={'request': request})
     return Response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def apply_job(request, job_id):
+    try:
+        job = Job.objects.get(id=job_id, active=True)
+        user = request.user
+        
+        serializer = JobApplicationCreateSerializer(
+            data=request.data, 
+            context={'request': request}
+        )
+        
+        if serializer.is_valid():
+            application = serializer.save(user=user, job=job)
+            
+            # Send notification email to company (optional)
+            try:
+                send_application_notification(user, job, application)
+            except Exception as e:
+                print(f"Failed to send notification: {e}")
+            
+            response_serializer = JobApplicationSerializer(application)
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+    except Job.DoesNotExist:
+        return Response(
+            {'error': 'Job not found or not active'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def my_applications(request):
+    applications = JobApplication.objects.filter(user=request.user)
+    serializer = JobApplicationSerializer(applications, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def job_applications(request, job_id):
+    try:
+        job = Job.objects.get(id=job_id)
+        # Only job owner or admin can see applications
+        if job.company != request.user.email and not request.user.is_staff:
+            return Response(
+                {'error': 'Permission denied'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        applications = JobApplication.objects.filter(job=job)
+        serializer = JobApplicationSerializer(applications, many=True)
+        return Response(serializer.data)
+        
+    except Job.DoesNotExist:
+        return Response(
+            {'error': 'Job not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@api_view(['PATCH'])
+@permission_classes([permissions.IsAuthenticated])
+def update_application_status(request, application_id):
+    try:
+        application = JobApplication.objects.get(id=application_id)
+        job = application.job
+        
+        # Only job owner can update status
+        if job.company != request.user.email and not request.user.is_staff:
+            return Response(
+                {'error': 'Permission denied'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        new_status = request.data.get('status')
+        if new_status in dict(JobApplication.STATUS_CHOICES):
+            application.status = new_status
+            application.save()
+            
+            # Send status update email to user (optional)
+            try:
+                send_status_update_email(application)
+            except Exception as e:
+                print(f"Failed to send status update: {e}")
+            
+            serializer = JobApplicationSerializer(application)
+            return Response(serializer.data)
+        else:
+            return Response(
+                {'error': 'Invalid status'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+    except JobApplication.DoesNotExist:
+        return Response(
+            {'error': 'Application not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
 
 
 @api_view(['POST'])
