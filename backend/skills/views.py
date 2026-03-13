@@ -74,20 +74,23 @@ def evaluate_skill(request):
         else:
             level = 'senior'
         
-        # Generate AI feedback
-        if settings.OPENAI_API_KEY and settings.OPENAI_API_KEY != 'your-openai-api-key-here':
-            try:
-                client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-                
-                answers_text = '\n\n'.join([
-                    f"Q{i+1}: {q['question_text']}\nSelected answer: {q['options'][answers[i]]}\nCorrect answer: {q['options'][q.get('correct_answer', 0)]}"
-                    for i, q in enumerate(questions)
-                ])
-                
-                print(f"DEBUG: Using OpenAI API with key: {settings.OPENAI_API_KEY[:20]}...")
-                print(f"DEBUG: Score: {score_percentage:.1f}%, Level: {level}")
-                
-                prompt = f"""You are an expert IT career evaluator. A user just took a skill test for the role of "{role}".
+        # Generate AI feedback with Google Gemini (FREE)
+        try:
+            import google.generativeai as genai
+            
+            # Configure Gemini (FREE API KEY)
+            genai.configure(api_key=settings.GOOGLE_AI_API_KEY)
+            model = genai.GenerativeModel('gemini-pro')
+            
+            answers_text = '\n\n'.join([
+                f"Q{i+1}: {q['question_text']}\nSelected answer: {q['options'][answers[i]]}\nCorrect answer: {q['options'][q.get('correct_answer', 0)]}"
+                for i, q in enumerate(questions)
+            ])
+            
+            print(f"DEBUG: Using Google Gemini API")
+            print(f"DEBUG: Score: {score_percentage:.1f}%, Level: {level}")
+            
+            prompt = f"""You are an expert IT career evaluator. A user just took a skill test for the role of "{role}".
 
 Here are their answers:
 {answers_text}
@@ -111,23 +114,25 @@ Respond with a JSON object exactly like this:
   "feedback": "2-3 sentences of personalized, encouraging feedback explaining their {score_percentage:.1f}% score and {level} level. Include specific advice for improvement and what to focus on next. Be warm and supportive like a mentor to a young woman starting her career."
 }}"""
 
-                response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[{"role": "user", "content": prompt}],
-                    response_format={"type": "json_object"}
-                )
-                
-                ai_response = json.loads(response.choices[0].message.content)
+            response = model.generate_content(prompt)
+            
+            # Parse JSON from response
+            import json
+            import re
+            
+            # Extract JSON from response
+            json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
+            if json_match:
+                ai_response = json.loads(json_match.group())
                 feedback = ai_response.get('feedback', f'Great job on completing {role} skill test! You scored {score_percentage:.1f}% and achieved {level} level.')
-                
-                print(f"DEBUG: AI Response: {ai_response}")
-                
-            except Exception as e:
-                print(f"DEBUG: OpenAI API Error: {str(e)}")
-                feedback = f'Great job on completing {role} skill test! You scored {score_percentage:.1f}% and achieved {level} level. Keep practicing to improve your skills!'
-        else:
-            # Fallback feedback without AI
-            print("DEBUG: Using fallback feedback (no OpenAI key)")
+            else:
+                feedback = f'Great job on completing {role} skill test! You scored {score_percentage:.1f}% and achieved {level} level.'
+            
+            print(f"DEBUG: Gemini Response: {ai_response}")
+            
+        except Exception as e:
+            print(f"DEBUG: Gemini API Error: {str(e)}")
+            # Fallback feedback
             feedback_messages = {
                 'beginner': f'Great start on your {role} journey! You scored {score_percentage:.1f}% at Beginner level. Focus on learning fundamentals and practice regularly.',
                 'junior': f'Good progress! You scored {score_percentage:.1f}% at Junior level in {role}. Continue building your skills and try more complex projects.',
