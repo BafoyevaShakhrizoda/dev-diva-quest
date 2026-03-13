@@ -16,6 +16,7 @@ class Command(BaseCommand):
                         'To handle routing',
                         'To style components'
                     ],
+                    'correct_answer': 0,
                     'difficulty': 'easy'
                 },
                 {
@@ -26,6 +27,7 @@ class Command(BaseCommand):
                         'float: left',
                         'margin: auto'
                     ],
+                    'correct_answer': 0,
                     'difficulty': 'easy'
                 },
                 {

@@ -54,7 +54,11 @@ def evaluate_skill(request):
         correct_count = 0
         
         for i, answer in enumerate(answers):
-            if answer == 0:  # First option is always correct
+            # Get the correct answer from question data
+            question_data = questions[i]
+            correct_answer_index = question_data.get('correct_answer', 0)  # Default to 0 if not specified
+            
+            if answer == correct_answer_index:
                 correct_count += 1
         
         # Calculate percentage
@@ -76,16 +80,17 @@ def evaluate_skill(request):
                 client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
                 
                 answers_text = '\n\n'.join([
-                    f"Q{i+1}: {q['question_text']}\nSelected answer: {q['options'][answers[i]]}"
+                    f"Q{i+1}: {q['question_text']}\nSelected answer: {q['options'][answers[i]]}\nCorrect answer: {q['options'][q.get('correct_answer', 0)]}"
                     for i, q in enumerate(questions)
                 ])
+                
+                print(f"DEBUG: Using OpenAI API with key: {settings.OPENAI_API_KEY[:20]}...")
+                print(f"DEBUG: Score: {score_percentage:.1f}%, Level: {level}")
                 
                 prompt = f"""You are an expert IT career evaluator. A user just took a skill test for the role of "{role}".
 
 Here are their answers:
 {answers_text}
-
-The correct answers are always the FIRST option (index 0) for each question.
 
 Test Results:
 - Total Questions: {total_questions}
@@ -113,13 +118,18 @@ Respond with a JSON object exactly like this:
                 )
                 
                 ai_response = json.loads(response.choices[0].message.content)
-                feedback = ai_response.get('feedback', f'Great job on completing the {role} skill test! You scored {score_percentage:.1f}% and achieved {level} level.')
+                feedback = ai_response.get('feedback', f'Great job on completing {role} skill test! You scored {score_percentage:.1f}% and achieved {level} level.')
+                
+                print(f"DEBUG: AI Response: {ai_response}")
+                
             except Exception as e:
-                feedback = f'Great job on completing the {role} skill test! You scored {score_percentage:.1f}% and achieved {level} level. Keep practicing to improve your skills!'
+                print(f"DEBUG: OpenAI API Error: {str(e)}")
+                feedback = f'Great job on completing {role} skill test! You scored {score_percentage:.1f}% and achieved {level} level. Keep practicing to improve your skills!'
         else:
             # Fallback feedback without AI
+            print("DEBUG: Using fallback feedback (no OpenAI key)")
             feedback_messages = {
-                'beginner': f'Great start on your {role} journey! You scored {score_percentage:.1f}% at Beginner level. Focus on learning the fundamentals and practice regularly.',
+                'beginner': f'Great start on your {role} journey! You scored {score_percentage:.1f}% at Beginner level. Focus on learning fundamentals and practice regularly.',
                 'junior': f'Good progress! You scored {score_percentage:.1f}% at Junior level in {role}. Continue building your skills and try more complex projects.',
                 'middle': f'Impressive work! You scored {score_percentage:.1f}% at Middle level in {role}. You have solid knowledge - keep challenging yourself!',
                 'senior': f'Excellent performance! You scored {score_percentage:.1f}% at Senior level in {role}. You have expert-level knowledge!'
