@@ -27,12 +27,20 @@ def register(request):
         # Create user profile
         UserProfile.objects.create(user=user)
         
+        # Debug: Print environment variables
+        print(f"DEBUG: EMAIL_HOST_USER = {settings.EMAIL_HOST_USER}")
+        print(f"DEBUG: EMAIL_HOST_PASSWORD = {'SET' if settings.EMAIL_HOST_PASSWORD else 'NOT SET'}")
+        print(f"DEBUG: DEFAULT_FROM_EMAIL = {settings.DEFAULT_FROM_EMAIL}")
+        
         # Generate verification token
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         
         # Send verification email
         verification_url = f"https://devgirlzz.com.uz/verify-email/{uid}/{token}"
+        
+        print(f"DEBUG: Sending email to {user.email}")
+        print(f"DEBUG: Verification URL: {verification_url}")
         
         try:
             send_mail(
@@ -54,9 +62,11 @@ Dev Diva Quest Team
                 [user.email],
                 fail_silently=False,
             )
+            print(f"DEBUG: Email sent successfully to {user.email}")
         except Exception as e:
+            print(f"DEBUG: Email sending failed: {str(e)}")
             # If email fails, still allow registration
-            print(f"Email sending failed: {e}")
+            print("DEBUG: Allowing registration despite email failure")
         
         # Generate tokens
         refresh = RefreshToken.for_user(user)
