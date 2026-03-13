@@ -28,13 +28,14 @@ class SkillTest(models.Model):
     result_level = models.CharField(max_length=20, choices=LEVEL_CHOICES)
     feedback = models.TextField()
     score = models.IntegerField(default=0)
+    score_percentage = models.FloatField(default=0.0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.user.email} - {self.role} - {self.result_level}"
+        return f"{self.user.email} - {self.role} ({self.result_level})"
 
 
 class Question(models.Model):
@@ -46,20 +47,22 @@ class Question(models.Model):
         ('devops', 'DevOps Engineer'),
         ('designer', 'UI/UX Designer'),
     ]
+    
+    DIFFICULTY_CHOICES = [
+        ('easy', 'Easy'),
+        ('medium', 'Medium'),
+        ('hard', 'Hard'),
+    ]
 
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     question_text = models.TextField()
     options = models.JSONField()
     correct_answer = models.IntegerField(default=0)
-    difficulty = models.CharField(max_length=10, choices=[
-        ('easy', 'Easy'),
-        ('medium', 'Medium'),
-        ('hard', 'Hard'),
-    ], default='medium')
+    difficulty = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['role', 'difficulty', 'id']
+        ordering = ['difficulty', 'created_at']
 
     def __str__(self):
         return f"{self.role} - {self.question_text[:50]}..."
