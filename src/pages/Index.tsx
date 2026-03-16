@@ -11,14 +11,33 @@ const Index = () => {
   const [activeCategory, setActiveCategory] = useState<CareerCategory | "all">("all");
   const [search, setSearch] = useState("");
 
+  console.log('Careers data:', careers);
+  console.log('Search term:', search);
+  console.log('Active category:', activeCategory);
+
   const filtered = careers.filter((c) => {
     const matchCat = activeCategory === "all" || c.category === activeCategory;
     const matchSearch =
       search === "" ||
       c.title.toLowerCase().includes(search.toLowerCase()) ||
-      c.languages.some((l) => l.name.toLowerCase().includes(search.toLowerCase()));
+      c.languages.some((l) => l.name.toLowerCase().includes(search.toLowerCase())) ||
+      c.description.toLowerCase().includes(search.toLowerCase()) ||
+      c.tagline.toLowerCase().includes(search.toLowerCase()) ||
+      c.tools.some((t) => t.toLowerCase().includes(search.toLowerCase()));
+    
+    // Debug logging
+    if (search !== "") {
+      console.log('Search:', search);
+      console.log('Career:', c.title);
+      console.log('Match Category:', matchCat);
+      console.log('Match Search:', matchSearch);
+      console.log('---');
+    }
+    
     return matchCat && matchSearch;
   });
+
+  console.log('Filtered careers:', filtered);
 
   return (
     <div className="min-h-screen bg-background">

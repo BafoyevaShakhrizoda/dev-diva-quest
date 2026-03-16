@@ -29,41 +29,31 @@ class ApiClient {
 
   constructor(baseURL: string) {
     this.baseURL = baseURL;
+  }
+
+  private async request(endpoint: string, options: RequestInit = {}) {
+    const url = `${this.baseURL}${endpoint}`;
     
-    // Get token from localStorage on init
-    this.token = localStorage.getItem('authToken');
-  }
-
-  setToken(token: string) {
-    this.token = token;
-    localStorage.setItem('authToken', token);
-  }
-
-  clearToken() {
-    this.token = null;
-    localStorage.removeItem('authToken');
-  }
-
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${this.baseURL}/api${endpoint}`;
-    
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string>),
+    const config: RequestInit = {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
     };
 
-    if (this.token) {
-      headers.Authorization = `Token ${this.token}`;
+    // Add auth token if available
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers = {
+        ...config.headers,
+        'Authorization': `Bearer ${token}`,
+      };
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
-
+    const response = await fetch(url, config);
+    
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
       throw new Error(error.error || error.message || `HTTP ${response.status}`);
@@ -73,6 +63,13 @@ class ApiClient {
   }
 
   // Auth endpoints
+  async login(email: string, password: string) {
+    return this.request('/users/login/', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+  }
+
   async register(data: {
     email: string;
     password: string;

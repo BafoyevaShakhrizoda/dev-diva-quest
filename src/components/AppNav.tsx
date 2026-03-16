@@ -2,7 +2,7 @@ import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Briefcase, Users } from "lucide-react";
 import logo from "@/assets/devgirlzz-logo.png";
 
 interface AppNavLinkProps {
@@ -48,14 +48,15 @@ const AppNav = () => {
           </span>
         </NavLink>
 
-        {/* Nav links */}
-        <nav className="hidden md:flex items-center gap-1">
+        {/* Navigation */}
+        <div className="hidden md:flex items-center gap-1">
+          <AppNavLink to="/">Home</AppNavLink>
           <AppNavLink to="/dashboard">Dashboard</AppNavLink>
-          <AppNavLink to="/careers">Careers</AppNavLink>
-          <AppNavLink to="/test">Skill Test</AppNavLink>
+          <AppNavLink to="/skill-test">Skills</AppNavLink>
+          <AppNavLink to="/cv-builder">CV Builder</AppNavLink>
+          <AppNavLink to="/jobs">Jobs</AppNavLink>
           <AppNavLink to="/resources">Resources</AppNavLink>
-          <AppNavLink to="/cv">CV Builder</AppNavLink>
-        </nav>
+        </div>
 
         {/* User area */}
         <div className="flex items-center gap-2">

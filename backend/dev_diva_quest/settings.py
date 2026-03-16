@@ -92,6 +92,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 8,
+        }
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
@@ -111,6 +114,21 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@devgirlzz.com.uz')
+
+# Alternative email services (uncomment if Gmail doesn't work)
+# SendGrid (FREE 100 emails/day)
+# EMAIL_HOST = 'smtp.sendgrid.net'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = env('SENDGRID_API_KEY', default='')
+# EMAIL_HOST_PASSWORD = env('SENDGRID_API_KEY', default='')
+
+# Mailgun (FREE 5,000 emails/month)
+# EMAIL_HOST = 'smtp.mailgun.org'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = env('MAILGUN_API_KEY', default='')
+# EMAIL_HOST_PASSWORD = env('MAILGUN_API_KEY', default='')
 
 # Google Gemini API (FREE)
 GOOGLE_AI_API_KEY = env('GOOGLE_AI_API_KEY', default='')
