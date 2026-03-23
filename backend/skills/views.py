@@ -1,6 +1,6 @@
 import json
 import random
-import openai
+import google.generativeai as genai
 from django.conf import settings
 from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
@@ -12,9 +12,80 @@ from .serializers import (
 )
 
 
-@api_view(['GET'])
-@permission_classes([permissions.AllowAny])
-def get_questions(request):
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def generate_questions(request):
+    """Generate AI-powered questions for skill tests"""
+    role = request.data.get('role')
+    count = request.data.get('count', 10)
+    
+    if not role:
+        return Response(
+            {'error': 'Role is required'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        # Configure Gemini
+        genai.configure(api_key=settings.GOOGLE_AI_API_KEY)
+        model = genai.GenerativeModel('gemini-pro')
+        
+        prompt = f"""Generate {count} multiple-choice questions for a {role} skill assessment test.
+
+Requirements:
+- Each question must have 4 options (A, B, C, D)
+- Only one correct answer
+- Questions should test practical knowledge
+- Include a mix of theory and practical scenarios
+- Difficulty should be appropriate for junior to middle level
+
+Format each question exactly like this:
+{{
+    "question_text": "Question text here?",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correct_answer": 0,
+    "difficulty": "easy|medium|hard"
+}}
+
+Return only a JSON array of questions, nothing else."""
+
+        response = model.generate_content(prompt)
+        
+        # Parse JSON from response
+        import re
+        json_match = re.search(r'\[.*\]', response.text, re.DOTALL)
+        
+        if json_match:
+            questions = json.loads(json_match.group())
+            
+            # Save questions to database
+            saved_questions = []
+            for q in questions:
+                question = Question.objects.create(
+                    role=role,
+                    question_text=q['question_text'],
+                    options=q['options'],
+                    correct_answer=q['correct_answer'],
+                    difficulty=q.get('difficulty', 'medium')
+                )
+                saved_questions.append(QuestionSerializer(question).data)
+            
+            return Response({
+                'questions': saved_questions,
+                'message': f'Generated {len(saved_questions)} questions for {role}'
+            })
+        else:
+            return Response(
+                {'error': 'Failed to parse AI response'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+            
+    except Exception as e:
+        print(f"DEBUG: Question generation error: {str(e)}")
+        return Response(
+            {'error': f'Failed to generate questions: {str(e)}'}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
     role = request.query_params.get('role')
     if not role:
         return Response(
@@ -76,8 +147,6 @@ def evaluate_skill(request):
         
         # Generate AI feedback with Google Gemini (FREE)
         try:
-            import google.generativeai as genai
-            
             # Configure Gemini (FREE API KEY)
             genai.configure(api_key=settings.GOOGLE_AI_API_KEY)
             model = genai.GenerativeModel('gemini-pro')
@@ -117,7 +186,6 @@ Respond with a JSON object exactly like this:
             response = model.generate_content(prompt)
             
             # Parse JSON from response
-            import json
             import re
             
             # Extract JSON from response

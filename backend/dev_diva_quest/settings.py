@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-change-me-in-production')
 
-DEBUG = env('DEBUG')
+DEBUG = env('DEBUG', default='True').lower() == 'true'
 
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[
@@ -140,9 +140,18 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+# Admin panel settings
+ADMIN_ENABLED = True
+
+# Admin panel security for production
+ADMIN_SITE_HEADER = "Dev Diva Quest Admin"
+ADMIN_SITE_TITLE = "Dev Diva Quest Administration"
+ADMIN_INDEX_TITLE = "Welcome to Dev Diva Quest Admin"
+
+# Static files for production
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-
+# Admin panel media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 

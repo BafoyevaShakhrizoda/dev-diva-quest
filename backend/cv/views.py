@@ -1,5 +1,5 @@
 import json
-import openai
+import google.generativeai as genai
 from django.conf import settings
 from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
@@ -18,128 +18,105 @@ def generate_cv(request):
     cv_data = serializer.validated_data
     
     try:
-        client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+        # Configure Gemini
+        genai.configure(api_key=settings.GOOGLE_AI_API_KEY)
+        model = genai.GenerativeModel('gemini-pro')
         
-        # Build links string
-        links = [
-            cv_data.get('github') and f"GitHub: {cv_data['github']}" or '',
-            cv_data.get('linkedin') and f"LinkedIn: {cv_data['linkedin']}" or '',
-            cv_data.get('telegram') and f"Telegram: {cv_data['telegram']}" or '',
-            cv_data.get('website') and f"Website: {cv_data['website']}" or '',
-        ]
-        links = ' | '.join(filter(None, links))
+        # Build CV content
+        cv_content = f"""
+        Name: {cv_data.get('personal_info', {}).get('full_name', '')}
+        Email: {cv_data.get('personal_info', {}).get('email', '')}
+        Phone: {cv_data.get('personal_info', {}).get('phone', '')}
         
-        # Build experience text
-        experience_text = '\n\n'.join([
-            f"- {e.get('title', '')} at {e.get('company', '')} ({e.get('duration', '')}):\n  {e.get('description', '')}"
-            for e in cv_data.get('experience', [])
-        ])
+        Summary: {cv_data.get('summary', '')}
         
-        # Build education text
-        education_text = '\n'.join([
-            f"- {e.get('degree', '')} at {e.get('school', '')} ({e.get('year', '')})"
-            for e in cv_data.get('education', [])
-        ])
+        Experience:
+        {json.dumps(cv_data.get('experience', []), indent=2)}
         
-        # Build projects text
-        projects_list = []
-        for p in cv_data.get('projects', []):
-            if p.get('name'):
-                project_text = f"- {p.get('name', '')} [{p.get('tech', '')}]: {p.get('description', '')}"
-                if p.get('link'):
-                    project_text += f' | {p["link"]}'
-                projects_list.append(project_text)
-        projects_text = '\n'.join(projects_list)
+        Education:
+        {json.dumps(cv_data.get('education', []), indent=2)}
         
-        # Build certifications text
-        certifications_list = []
-        for c in cv_data.get('certifications', []):
-            if c.get('name'):
-                cert_text = f"- {c.get('name', '')} — {c.get('platform', '')}"
-                if c.get('link'):
-                    cert_text += f' ({c["link"]})'
-                certifications_list.append(cert_text)
-        certifications_text = '\n'.join(certifications_list)
+        Skills:
+        {json.dumps(cv_data.get('skills', []), indent=2)}
         
-        # Build skills text
-        skills_text = ', '.join(filter(None, cv_data.get('skills', [])))
+        Projects:
+        {json.dumps(cv_data.get('projects', []), indent=2)}
+        """
         
-        # Build languages text
-        languages_list = cv_data.get('languages', [])
-        languages_text = ' | '.join([
-            isinstance(l, str) and l or f"{l.get('language', '')} – {l.get('level', '')}"
-            for l in languages_list if l
-        ])
+        prompt = f"""Generate a professional CV based on this information:
         
-        prompt = f"""You are a professional CV writer specializing in IT careers. Create a polished, ATS-friendly CV styled like a real professional resume. Use clear section headings in UPPERCASE. Be professional and highlight uniqueness. Make the summary compelling and achievement-focused.
-
-Candidate data:
-Name: {cv_data['name']}
-Role: {cv_data['role']}
-Email: {cv_data['email']} | Phone: {cv_data.get('phone', '')} | Location: {cv_data['location']}
-{links}
-
-Summary: {cv_data['summary']}
-
-Work Experience:
-{experience_text}
-
-Education:
-{education_text}
-
-Projects:
-{projects_text}
-
-Certifications:
-{certifications_text}
-
-Technical Skills: {skills_text}
-
-Languages: {languages_text}
-
-Generate a complete, professional CV in plain text format with these sections in order:
-1. Header (Name, Role, Contact, Links)
-2. SUMMARY
-3. WORK EXPERIENCE
-4. EDUCATION
-5. PROJECTS (if any)
-6. CERTIFICATES (if any)
-7. SKILLS AND INSTRUMENTS
-8. LANGUAGES
-
-Make it clean, readable, and ATS-friendly. Use bullet points with "-" for experience and project details."""
-
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}]
-        )
+        {cv_content}
         
-        generated_cv = response.choices[0].message.content
+        Format the CV with proper sections:
+        1. Contact Information
+        2. Professional Summary
+        3. Experience
+        4. Education
+        5. Skills
+        6. Projects
         
-        # Save CV to database
+        Use professional language and format. Make it impressive but truthful.
+        Respond with the complete CV content in a clean, readable format."""
+
+        response = model.generate_content(prompt)
+        
+        # Create CV with AI-generated content
         cv = CV.objects.create(
             user=request.user,
-            generated_cv=generated_cv,
-            **cv_data
+            title=cv_data.get('title', 'Professional CV'),
+            content=response.text,
+            template=cv_data.get('template', 'modern'),
+            is_active=True
         )
         
         return Response({
-            'cv_id': cv.id,
-            'generated_cv': generated_cv
-        })
+            'cv': CVSerializer(cv).data,
+            'message': 'CV generated successfully!'
+        }, status=status.HTTP_201_CREATED)
         
     except Exception as e:
-        return Response(
-            {'error': str(e)}, 
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        return Response({
+            'error': f'Failed to generate CV: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
-def my_cvs(request):
+def get_cvs(request):
     cvs = CV.objects.filter(user=request.user)
     serializer = CVSerializer(cvs, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def cv_detail(request, pk):
+    try:
+        cv = CV.objects.get(pk=pk, user=request.user)
+    except CV.DoesNotExist:
+        return Response({'error': 'CV not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        serializer = CVSerializer(cv)
+        return Response(serializer.data)
+    
+    elif request.method == 'PUT':
+        serializer = CVCreateSerializer(cv, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        cv.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def get_templates(request):
+    templates = CVTemplate.objects.all()
+    serializer = CVTemplateSerializer(templates, many=True)
     return Response(serializer.data)
 
 

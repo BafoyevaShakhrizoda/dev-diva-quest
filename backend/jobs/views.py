@@ -1,4 +1,5 @@
-import openai
+import json
+import google.generativeai as genai
 from django.conf import settings
 from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
@@ -261,7 +262,7 @@ def calculate_match_score(job, user_role, user_level):
     score += level_match * 30
     
     # AI-powered requirements matching (30 points)
-    if settings.OPENAI_API_KEY:
+    if settings.GOOGLE_AI_API_KEY:
         try:
             ai_score = get_ai_match_score(job, user_role, user_level)
             score += ai_score * 30
@@ -291,35 +292,42 @@ def get_level_match(job_level, user_level):
 
 def get_ai_match_score(job, user_role, user_level):
     """Use AI to analyze job requirements and user skills"""
-    client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-    
-    prompt = f"""Analyze how well a {user_level} {user_role} developer matches this job:
+    try:
+        # Configure Gemini
+        genai.configure(api_key=settings.GOOGLE_AI_API_KEY)
+        model = genai.GenerativeModel('gemini-pro')
+        
+        prompt = f"""Analyze how well a {user_level} {user_role} developer matches this job:
 
 Job Title: {job.title}
 Company: {job.company}
 Requirements: {job.requirements}
-Description: {job.description}
+Experience Level: {job.experience_level}
 
-User Level: {user_level}
-User Role: {user_role}
+User Profile:
+- Role: {user_role}
+- Level: {user_level}
 
-Rate the match from 0-1 based on:
-1. Technical skills alignment
-2. Experience level appropriateness  
-3. Career progression potential
+Rate the match from 0.0 to 1.0 based on:
+1. Role alignment (40%)
+2. Experience level match (30%)
+3. Requirements compatibility (30%)
 
-Respond with only a number between 0 and 1 (e.g., 0.85)"""
+Respond with only a number between 0.0 and 1.0."""
 
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=10
-    )
-    
-    try:
-        score = float(response.choices[0].message.content.strip())
-        return max(0, min(1, score))
-    except:
+        response = model.generate_content(prompt)
+        score_text = response.text.strip()
+        
+        # Extract numeric score
+        import re
+        score_match = re.search(r'0\.\d+|1\.0|0|1', score_text)
+        if score_match:
+            return float(score_match.group())
+        else:
+            return 0.5  # Default middle score
+            
+    except Exception as e:
+        print(f"AI match score error: {e}")
         return 0.5
 
 
