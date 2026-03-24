@@ -148,12 +148,21 @@ ADMIN_SITE_HEADER = "Dev Diva Quest Admin"
 ADMIN_SITE_TITLE = "Dev Diva Quest Administration"
 ADMIN_INDEX_TITLE = "Welcome to Dev Diva Quest Admin"
 
+# Admin panel URLs for production
+ADMIN_URL = '/admin/'
+
 # Static files for production
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Admin panel media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Admin panel authentication
+LOGIN_URL = '/admin/login/'
+LOGOUT_URL = '/admin/logout/'
+LOGIN_REDIRECT_URL = '/admin/'
+LOGOUT_REDIRECT_URL = '/admin/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
