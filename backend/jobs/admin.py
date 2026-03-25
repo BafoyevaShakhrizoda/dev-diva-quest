@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Job, JobMatch
+from .models import Job, JobMatch, JobApplication
 
 
 @admin.register(Job)
@@ -8,6 +8,17 @@ class JobAdmin(admin.ModelAdmin):
     list_filter = ['role', 'experience_level', 'remote', 'active', 'created_at']
     search_fields = ['title', 'company', 'description', 'requirements']
     readonly_fields = ['created_at', 'updated_at']
+
+
+@admin.register(JobApplication)
+class JobApplicationAdmin(admin.ModelAdmin):
+    list_display = ['user', 'job', 'status', 'applied_at', 'cv']
+    list_filter = ['status', 'applied_at']
+    search_fields = ['user__email', 'job__title', 'job__company']
+    readonly_fields = ['applied_at']
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user', 'job')
 
 
 @admin.register(JobMatch)
