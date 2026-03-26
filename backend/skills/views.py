@@ -12,6 +12,37 @@ from .serializers import (
 )
 
 
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def get_questions(request):
+    """Get questions for a specific role"""
+    role = request.query_params.get('role')
+    if not role:
+        return Response(
+            {'error': 'Role parameter is required'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    questions = Question.objects.filter(role=role)
+    
+    # Get all available questions for this role
+    all_questions = list(questions)
+    
+    if not all_questions:
+        return Response(
+            {'error': f'No questions found for role: {role}'}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Return all questions (frontend will select which ones to use)
+    serializer = QuestionSerializer(all_questions, many=True)
+    return Response({
+        'questions': serializer.data,
+        'total': len(all_questions),
+        'role': role
+    })
+
+
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def generate_questions(request):
