@@ -32,7 +32,7 @@ urlpatterns = [
     path('', home_view, name='home'),
     
     # Admin panel - production uchun
-    path('admin/', dev_diva_admin.urls),
+    path('admin/', admin.site.urls),
     
     # DRF browsable API login/logout (DEBUG=True da ishlaydi)
     path('api-auth/', include('rest_framework.urls')),

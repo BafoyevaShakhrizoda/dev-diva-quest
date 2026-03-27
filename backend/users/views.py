@@ -7,7 +7,7 @@ from django.conf import settings
 from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
+# from rest_framework_simplejwt.tokens import RefreshToken  # Temporarily disabled
 from .models import User, UserProfile
 from .serializers import (
     UserSerializer, UserProfileSerializer, 
@@ -68,15 +68,15 @@ Dev Diva Quest Team
             # If email fails, still allow registration
             print("DEBUG: Allowing registration despite email failure")
         
-        # Generate tokens
-        refresh = RefreshToken.for_user(user)
+        # Generate tokens (temporarily disabled)
+        # refresh = RefreshToken.for_user(user)
         
         return Response({
             'user': UserSerializer(user).data,
-            'tokens': {
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            },
+            # 'tokens': {
+            #     'refresh': str(refresh),
+            #     'access': str(refresh.access_token),
+            # },
             'message': 'Registration successful! Please check your email for verification.'
         }, status=status.HTTP_201_CREATED)
     

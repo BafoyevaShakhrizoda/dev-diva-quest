@@ -11,6 +11,9 @@ from .serializers import (
     SkillTestCreateSerializer, SkillEvaluationSerializer
 )
 
+# Configure Gemini globally
+genai.configure(api_key=settings.GOOGLE_AI_API_KEY)
+
 
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
@@ -44,7 +47,7 @@ def get_questions(request):
 
 
 @api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.AllowAny])  # Changed to AllowAny for testing
 def generate_questions(request):
     """Generate AI-powered questions for skill tests"""
     role = request.data.get('role')
@@ -57,9 +60,8 @@ def generate_questions(request):
         )
     
     try:
-        # Configure Gemini
-        genai.configure(api_key=settings.GOOGLE_AI_API_KEY)
-        model = genai.GenerativeModel('gemini-pro')
+        # Use configured Gemini with correct model name
+        model = genai.GenerativeModel('gemini-2.0-flash-exp')
         
         prompt = f"""Generate {count} multiple-choice questions for a {role} skill assessment test.
 
