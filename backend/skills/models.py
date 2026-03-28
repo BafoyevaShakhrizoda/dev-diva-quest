@@ -12,6 +12,16 @@ class SkillTest(models.Model):
         ('mobile', 'Mobile Developer'),
         ('devops', 'DevOps Engineer'),
         ('designer', 'UI/UX Designer'),
+        ('react', 'React Developer'),
+        ('vue', 'Vue Developer'),
+        ('python', 'Python Developer'),
+        ('java', 'Java Developer'),
+        ('javascript', 'JavaScript Developer'),
+        ('sql', 'SQL Developer'),
+        ('mongodb', 'MongoDB Developer'),
+        ('docker', 'Docker Developer'),
+        ('aws', 'AWS Developer'),
+        ('testing', 'Testing Engineer'),
     ]
     
     LEVEL_CHOICES = [
