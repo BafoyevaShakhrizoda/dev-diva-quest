@@ -34,8 +34,14 @@ cp .env.example .env
 
 Update `.env` with your actual values:
 - `SECRET_KEY`: Generate a new Django secret key
-- `OPENAI_API_KEY`: Your OpenAI API key
+- `EMAIL_HOST_USER`: Your email address (Gmail recommended)
+- `EMAIL_HOST_PASSWORD`: Your email app password
+- `GOOGLE_AI_API_KEY`: Your Google Gemini API key
+- `OPENAI_API_KEY`: Your OpenAI API key (optional)
 - Database credentials
+
+**⚠️ CRITICAL: Email Verification Setup**
+For user email verification to work, you MUST configure email credentials. See `EMAIL_SETUP.md` for detailed instructions.
 
 ### 4. Database Setup
 
@@ -69,11 +75,18 @@ The API will be available at `http://localhost:8000`
 ## API Endpoints
 
 ### Authentication
-- `POST /api/users/register/` - User registration
-- `POST /api/users/login/` - User login
+- `POST /api/users/register/` - User registration (returns message about email verification)
+- `POST /api/users/login/` - User login (returns auth token)
 - `POST /api/users/logout/` - User logout
-- `GET /api/users/me/` - Get current user info
-- `GET/PUT /api/users/profile/` - User profile
+- `GET /verify-email/<uidb64>/<token>/` - Verify email address (accessible from frontend)
+- `POST /api/users/resend-verification/` - Resend verification email
+- `GET /api/users/profile/` - Get user profile (requires token)
+- `PATCH /api/users/profile/update/` - Update user profile (requires token)
+
+**Authentication**: All endpoints except register/login/verify-email require an Authorization header:
+```
+Authorization: Token <your-token>
+```
 
 ### Skills
 - `GET /api/skills/questions/?role=<role>` - Get skill test questions

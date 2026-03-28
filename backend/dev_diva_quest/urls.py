@@ -3,6 +3,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.authtoken.views import obtain_auth_token
+from users.views import verify_email
 
 urlpatterns = [
     # Admin panel - production uchun
@@ -13,6 +14,9 @@ urlpatterns = [
     
     # Token authentication endpoint
     path('api/token/', obtain_auth_token, name='api_token'),
+    
+    # Email verification endpoint (accessible from frontend)
+    path('verify-email/<uidb64>/<token>/', verify_email, name='verify_email_root'),
     
     # Sizning app'lar
     path('api/users/', include('users.urls')),

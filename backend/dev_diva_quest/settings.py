@@ -205,10 +205,13 @@ if DEBUG:
         'rest_framework.renderers.BrowsableAPIRenderer',
     ]
 
-CORS_ALLOWED_ORIGINS = [
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
     "https://devgirlzz.vercel.app",
     "http://localhost:3000",
-]
+    "http://localhost:3001",
+    "https://devgirlzz.com.uz",
+    "https://www.devgirlzz.com.uz",
+])
 
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True

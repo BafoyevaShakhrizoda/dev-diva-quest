@@ -155,16 +155,14 @@ def login_view(request):
     if serializer.is_valid():
         user = serializer.validated_data['user']
         
-        # Generate tokens
-        refresh = RefreshToken.for_user(user)
+        # Generate token using DRF token authentication
+        from rest_framework.authtoken.models import Token
+        token, created = Token.objects.get_or_create(user=user)
         
         return Response({
             'user': UserSerializer(user).data,
-            'tokens': {
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            }
-        })
+            'token': str(token)
+        }, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -172,11 +170,9 @@ def login_view(request):
 @permission_classes([permissions.IsAuthenticated])
 def logout_view(request):
     try:
-        refresh_token = request.data.get('refresh')
-        if refresh_token:
-            token = RefreshToken(refresh_token)
-            token.blacklist()
-        return Response({'message': 'Successfully logged out'})
+        from rest_framework.authtoken.models import Token
+        request.user.auth_token.delete()
+        return Response({'message': 'Successfully logged out'}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
 
