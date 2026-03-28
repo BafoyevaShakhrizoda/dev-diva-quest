@@ -1,7 +1,10 @@
 import json
+import logging
 import random
 import google.generativeai as genai
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -114,31 +117,81 @@ Return only a JSON array of questions, nothing else."""
             )
             
     except Exception as e:
-        print(f"DEBUG: Question generation error: {str(e)}")
+        logger.exception("Question generation failed")
         return Response(
             {'error': f'Failed to generate questions: {str(e)}'}, 
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-    role = request.query_params.get('role')
-    if not role:
-        return Response(
-            {'error': 'Role parameter is required'}, 
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    questions = Question.objects.filter(role=role)
-    
-    # Get all available questions for this role
-    question_list = list(questions)
-    
-    # Shuffle options for each question
-    for question in question_list:
-        options = question.options.copy()
-        random.shuffle(options)
-        question.options = options
-    
-    serializer = QuestionSerializer(question_list, many=True)
-    return Response(serializer.data)
+
+
+def _normalize_skill_role(role_id: str) -> str:
+    valid = {c[0] for c in SkillTest.ROLE_CHOICES}
+    if role_id in valid:
+        return role_id
+    aliases = {
+        'qa': 'testing',
+        'data': 'python',
+        'designer': 'designer',
+    }
+    return aliases.get(role_id, 'frontend')
+
+
+def _normalize_level(level_raw: str) -> str:
+    mapping = {
+        'Beginner': 'beginner',
+        'Junior': 'junior',
+        'Middle': 'middle',
+        'Senior': 'senior',
+        'beginner': 'beginner',
+        'junior': 'junior',
+        'middle': 'middle',
+        'senior': 'senior',
+    }
+    return mapping.get(level_raw, 'junior')
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def save_skill_result(request):
+    """Store a skill test result from the SPA (after client-side / edge evaluation)."""
+    role_raw = request.data.get('role') or 'frontend'
+    role = _normalize_skill_role(str(role_raw))
+    language = request.data.get('language')
+    tier = request.data.get('tier') or ''
+    level_raw = request.data.get('level') or 'Junior'
+    feedback = request.data.get('feedback') or ''
+    score_str = str(request.data.get('score') or '0')
+    questions_data = request.data.get('questions') or []
+    answers_data = request.data.get('answers') or {}
+
+    try:
+        if '/' in score_str:
+            score_int = int(score_str.split('/')[0].strip())
+        else:
+            score_int = int(float(score_str))
+    except (ValueError, TypeError):
+        score_int = 0
+
+    questions_payload = {
+        'items': questions_data,
+        'language': language,
+        'tier': tier,
+    }
+    answers_payload = answers_data if isinstance(answers_data, dict) else {'raw': answers_data}
+    result_level = _normalize_level(str(level_raw))
+
+    test = SkillTest.objects.create(
+        user=request.user,
+        role=role,
+        questions=questions_payload,
+        answers=answers_payload,
+        result_level=result_level,
+        feedback=feedback,
+        score=score_int,
+        score_percentage=0.0,
+    )
+    serializer = SkillTestSerializer(test)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 @api_view(['POST'])

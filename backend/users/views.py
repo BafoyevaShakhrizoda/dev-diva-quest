@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -7,8 +9,11 @@ from django.conf import settings
 from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-# from rest_framework_simplejwt.tokens import RefreshToken  # Temporarily disabled
+from rest_framework.authtoken.models import Token
+
 from .models import User, UserProfile
+
+logger = logging.getLogger(__name__)
 from .serializers import (
     UserSerializer, UserProfileSerializer, 
     UserRegistrationSerializer, UserLoginSerializer
@@ -30,44 +35,45 @@ def register(request):
         # Generate verification token
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
-        
-        # Send verification email (working for demo)
-        verification_url = f"https://devgirlzz.com.uz/verify-email/{uid}/{token}"
-        
-        print(f"DEBUG: Sending email to {user.email}")
-        print(f"DEBUG: Verification URL: {verification_url}")
-        
+        base = getattr(settings, 'FRONTEND_URL', 'http://localhost:8080').rstrip('/')
+        verification_url = f"{base}/verify-email/{uid}/{token}"
+
+        email_sent = False
         try:
             send_mail(
-                'Verify your Dev Diva Quest account',
+                'Verify your DevGirlzz account',
                 f'''
 Hello {user.first_name or user.email}!
 
-Thank you for registering on Dev Diva Quest! 
+Thank you for registering on DevGirlzz.
 
-Please verify your email address by clicking the link below:
+Please verify your email address by opening this link in your browser:
 {verification_url}
 
-This link will expire in 24 hours.
+If you did not create an account, you can ignore this message.
 
 Best regards,
-Dev Diva Quest Team
+DevGirlzz
                 ''',
                 settings.DEFAULT_FROM_EMAIL,
                 [user.email],
                 fail_silently=False,
             )
-            print(f"DEBUG: Email sent successfully to {user.email}")
-        except Exception as e:
-            print(f"DEBUG: Email sending failed: {str(e)}")
-            # Auto-verify for demo
-            user.email_verified = True
-            user.save()
-            print(f"DEBUG: Auto-verified {user.email} due to email failure")
-        
+            email_sent = True
+            logger.info("Verification email queued for %s", user.email)
+        except Exception:
+            logger.exception("Failed to send verification email to %s", user.email)
+            if settings.DEBUG:
+                user.email_verified = True
+                user.save()
+                logger.warning("DEBUG: auto-verified %s (SMTP not configured)", user.email)
+
         return Response({
             'user': UserSerializer(user).data,
             'message': 'Registration successful! Please check your email for verification.'
+            if email_sent or settings.DEBUG
+            else 'Account created, but we could not send the verification email. Configure SMTP on the server or use "Resend verification" after fixing email settings.',
+            'email_sent': email_sent or settings.DEBUG,
         }, status=status.HTTP_201_CREATED)
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -107,8 +113,8 @@ def resend_verification(request):
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         
-        # Send verification email
-        verification_url = f"https://devgirlzz.com.uz/verify-email/{uid}/{token}"
+        base = getattr(settings, 'FRONTEND_URL', 'http://localhost:8080').rstrip('/')
+        verification_url = f"{base}/verify-email/{uid}/{token}"
         
         send_mail(
             'Verify your Dev Diva Quest account',
@@ -144,16 +150,10 @@ def login_view(request):
     serializer = UserLoginSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.validated_data['user']
-        
-        # Generate tokens
-        refresh = RefreshToken.for_user(user)
-        
+        token, _ = Token.objects.get_or_create(user=user)
         return Response({
             'user': UserSerializer(user).data,
-            'tokens': {
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            }
+            'token': token.key,
         })
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -161,14 +161,8 @@ def login_view(request):
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def logout_view(request):
-    try:
-        refresh_token = request.data.get('refresh')
-        if refresh_token:
-            token = RefreshToken(refresh_token)
-            token.blacklist()
-        return Response({'message': 'Successfully logged out'})
-    except Exception as e:
-        return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+    Token.objects.filter(user=request.user).delete()
+    return Response({'message': 'Successfully logged out'})
 
 
 @api_view(['GET'])

@@ -4,6 +4,8 @@ import { roleQuestionsMap, backendLanguageQuestionsMap, type Tier, type Level } 
 import AppNav from "@/components/AppNav";
 
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { apiClient } from "@/integrations/api/client";
 import { CheckCircle, Circle, Loader2, ChevronRight } from "lucide-react";
 
 const tierLevelCap: Record<Tier, Level[]> = {
@@ -58,6 +60,7 @@ const levelEmoji: Record<Level, string> = {
 };
 
 const SkillTest = () => {
+  const { user } = useAuth();
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
   const [selectedTier, setSelectedTier] = useState<Tier | null>(null);
@@ -86,19 +89,22 @@ const SkillTest = () => {
   };
 
   const saveResult = async (level: Level, feedback: string, score: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const career = careers.find((c) => c.id === selectedRole);
     const langLabel = availableLanguages.find((l) => l.id === selectedLanguage)?.label;
-    await supabase.from("skill_test_results").insert({
-      user_id: user.id,
-      role: career?.title || selectedRole || "",
-      language: langLabel || null,
-      tier: selectedTier || "",
-      level,
-      score,
-      feedback,
-    });
+    try {
+      await apiClient.saveSkillResult({
+        role: selectedRole || "",
+        language: langLabel || null,
+        tier: selectedTier || "",
+        level,
+        feedback,
+        score,
+        questions: roleQuestions,
+        answers,
+      });
+    } catch (e) {
+      console.error("Failed to save skill result", e);
+    }
   };
 
   const handleSubmit = async () => {
@@ -110,26 +116,35 @@ const SkillTest = () => {
     const pct = correct / roleQuestions.length;
     const scoreStr = `${correct}/${roleQuestions.length}`;
 
+    let usedEdge = false;
     try {
-      const { data, error } = await supabase.functions.invoke("evaluate-skill", {
-        body: {
-          role: langLabel ? `${career?.title} (${langLabel})` : career?.title || selectedRole,
-          tier: selectedTier,
-          questions: roleQuestions.map(q => ({ q: q.q, options: q.options })),
-          answers,
-          score: scoreStr,
-        },
-      });
-      if (error) throw error;
-      // Enforce tier cap client-side as well
-      const allowed = selectedTier ? tierLevelCap[selectedTier] : null;
-      let level: Level = data.level;
-      if (allowed && !allowed.includes(level)) level = allowed[allowed.length - 1];
-      setResult({ level, feedback: data.feedback });
-      await saveResult(level, data.feedback, scoreStr);
+      if (supabase) {
+        const { data, error } = await supabase.functions.invoke("evaluate-skill", {
+          body: {
+            role: langLabel ? `${career?.title} (${langLabel})` : career?.title || selectedRole,
+            tier: selectedTier,
+            questions: roleQuestions.map((q) => ({ q: q.q, options: q.options })),
+            answers,
+            score: scoreStr,
+          },
+        });
+        if (!error && data?.level) {
+          usedEdge = true;
+          const allowed = selectedTier ? tierLevelCap[selectedTier] : null;
+          let level: Level = data.level as Level;
+          if (allowed && !allowed.includes(level)) level = allowed[allowed.length - 1];
+          setResult({ level, feedback: data.feedback as string });
+          await saveResult(level, data.feedback as string, scoreStr);
+        }
+      }
     } catch {
-      // Fallback evaluation capped to tier
-      const allowed = selectedTier ? tierLevelCap[selectedTier] : (["Beginner", "Junior", "Middle", "Senior"] as Level[]);
+      usedEdge = false;
+    }
+
+    if (!usedEdge) {
+      const allowed = selectedTier
+        ? tierLevelCap[selectedTier]
+        : (["Beginner", "Junior", "Middle", "Senior"] as Level[]);
       let level: Level = allowed[0];
       if (pct >= 0.7 && allowed.includes("Senior")) level = "Senior";
       else if (pct >= 0.7 && allowed.includes("Middle")) level = "Middle";
@@ -139,10 +154,10 @@ const SkillTest = () => {
       const feedback = `You answered ${correct} out of ${roleQuestions.length} correctly on the ${selectedTier} tier. ${pct >= 0.7 ? "Great work! You demonstrate solid knowledge at this level." : "Keep practicing — review the topics you found challenging."}`;
       setResult({ level, feedback });
       await saveResult(level, feedback, scoreStr);
-    } finally {
-      setLoading(false);
-      setSubmitted(true);
     }
+
+    setLoading(false);
+    setSubmitted(true);
   };
 
   const resetAll = () => { setSelectedRole(null); setSelectedLanguage(null); setSelectedTier(null); setAnswers({}); setSubmitted(false); setResult(null); };

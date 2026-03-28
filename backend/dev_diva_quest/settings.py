@@ -18,8 +18,13 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[
     '127.0.0.1',
     'devgirlzz.com.uz',
     'dev-diva-quest-backend.onrender.com',
-    os.environ.get('RENDER_EXTERNAL_HOSTNAME', ''),  
+    'devgirlz.onrender.com',
+    os.environ.get('RENDER_EXTERNAL_HOSTNAME', ''),
 ])
+ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if h]
+
+# Public URL of the SPA (used in verification emails). Override in production.
+FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:8080').rstrip('/')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -29,7 +34,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    # 'rest_framework_simplejwt',  # Temporarily disabled
+    'rest_framework.authtoken',
     'corsheaders',
     'users',
     'jobs',
@@ -169,9 +174,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.TokenAuthentication',
-        # 'rest_framework_simplejwt.authentication.JWTAuthentication',  # Temporarily disabled
+        'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -205,12 +209,42 @@ if DEBUG:
         'rest_framework.renderers.BrowsableAPIRenderer',
     ]
 
-CORS_ALLOWED_ORIGINS = [
-    "https://devgirlzz.vercel.app",
-    "http://localhost:3000",
-]
+CORS_ALLOWED_ORIGINS = env.list(
+    'CORS_ALLOWED_ORIGINS',
+    default=[
+        'https://devgirlzz.vercel.app',
+        'http://localhost:8080',
+        'http://localhost:3000',
+        'http://127.0.0.1:8080',
+    ],
+)
 
-CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=False)
 CORS_ALLOW_CREDENTIALS = True
 
 OPENAI_API_KEY = env('OPENAI_API_KEY', default='')
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{levelname}] {asctime} {name} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
+        'django.request': {'handlers': ['console'], 'level': 'WARNING', 'propagate': False},
+    },
+}

@@ -10,13 +10,37 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 class SkillTestSerializer(serializers.ModelSerializer):
     user_email = serializers.EmailField(source='user.email', read_only=True)
-    
+    language = serializers.SerializerMethodField()
+    tier = serializers.SerializerMethodField()
+    level = serializers.SerializerMethodField()
+
     class Meta:
         model = SkillTest
-        fields = ['id', 'user_email', 'role', 'result_level', 'feedback', 
-                 'score', 'created_at']
-        read_only_fields = ['id', 'user_email', 'result_level', 'feedback', 
-                           'score', 'created_at']
+        fields = [
+            'id', 'user_email', 'role', 'language', 'tier', 'level',
+            'result_level', 'feedback', 'score', 'created_at',
+        ]
+        read_only_fields = [
+            'id', 'user_email', 'language', 'tier', 'level',
+            'result_level', 'feedback', 'score', 'created_at',
+        ]
+
+    def get_language(self, obj):
+        q = obj.questions or {}
+        return q.get('language')
+
+    def get_tier(self, obj):
+        q = obj.questions or {}
+        return q.get('tier')
+
+    def get_level(self, obj):
+        mapping = {
+            'beginner': 'Beginner',
+            'junior': 'Junior',
+            'middle': 'Middle',
+            'senior': 'Senior',
+        }
+        return mapping.get(obj.result_level, obj.result_level.title() if obj.result_level else '')
 
 
 class SkillTestCreateSerializer(serializers.ModelSerializer):

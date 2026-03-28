@@ -61,9 +61,13 @@ const CVBuilder = () => {
   const handleGenerate = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-cv", { body: { cv } });
-      if (error) throw error;
-      setGeneratedCV(data.cvText);
+      if (supabase) {
+        const { data, error } = await supabase.functions.invoke("generate-cv", { body: { cv } });
+        if (error) throw error;
+        setGeneratedCV((data as { cvText?: string }).cvText || buildSimpleCV(cv));
+      } else {
+        setGeneratedCV(buildSimpleCV(cv));
+      }
       setStep("preview");
     } catch {
       setGeneratedCV(buildSimpleCV(cv));
