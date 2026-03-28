@@ -50,11 +50,10 @@ const AppNav = () => {
 
         {/* Navigation */}
         <div className="hidden md:flex items-center gap-1">
-          <AppNavLink to="/">Home</AppNavLink>
           <AppNavLink to="/dashboard">Dashboard</AppNavLink>
-          <AppNavLink to="/skill-test">Skills</AppNavLink>
-          <AppNavLink to="/cv-builder">CV Builder</AppNavLink>
-          <AppNavLink to="/jobs">Jobs</AppNavLink>
+          <AppNavLink to="/test">Skills</AppNavLink>
+          <AppNavLink to="/cv">CV Builder</AppNavLink>
+          <AppNavLink to="/careers">Jobs</AppNavLink>
           <AppNavLink to="/resources">Resources</AppNavLink>
         </div>
 
