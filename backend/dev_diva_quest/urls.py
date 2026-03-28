@@ -3,8 +3,12 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.authtoken.views import obtain_auth_token
+from django.http import JsonResponse
 
 urlpatterns = [
+    # Root path for health check
+    path('', lambda request: JsonResponse({'status': 'ok', 'message': 'Dev Diva Quest API is running'})),
+    
     # Admin panel - production uchun
     path('admin/', admin.site.urls),
     
