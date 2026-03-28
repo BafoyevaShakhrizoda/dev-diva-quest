@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import SkillTest from "./pages/SkillTest";
 import Resources from "./pages/Resources";
 import CVBuilder from "./pages/CVBuilder";
+import Jobs from "./pages/Jobs";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import VerifyEmail from "./pages/VerifyEmail";
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/careers" element={<Index />} />
+            <Route path="/jobs" element={<Jobs />} />
             <Route path="/test" element={<SkillTest />} />
             <Route path="/resources" element={<Resources />} />
             <Route path="/cv" element={<CVBuilder />} />

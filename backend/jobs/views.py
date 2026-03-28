@@ -85,6 +85,7 @@ def all_jobs(request):
     role = request.query_params.get('role')
     level = request.query_params.get('level')
     location = request.query_params.get('location')
+    search = request.query_params.get('search', '')
     
     jobs = Job.objects.filter(active=True)
     
@@ -94,6 +95,13 @@ def all_jobs(request):
         jobs = jobs.filter(experience_level=level)
     if location:
         jobs = jobs.filter(location__icontains=location)
+    if search:
+        jobs = jobs.filter(
+            Q(title__icontains=search) |
+            Q(company__icontains=search) |
+            Q(description__icontains=search) |
+            Q(requirements__icontains=search)
+        )
     
     # Add context for has_applied field
     serializer = JobSerializer(jobs[:50], many=True, context={'request': request})
