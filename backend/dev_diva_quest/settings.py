@@ -17,7 +17,7 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[
     'localhost',
     '127.0.0.1',
     'devgirlzz.com.uz',
-    '.onrender.com',  
+    'dev-diva-quest-backend.onrender.com',
     os.environ.get('RENDER_EXTERNAL_HOSTNAME', ''),  
 ])
 
