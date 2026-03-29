@@ -8,9 +8,14 @@ env = environ.Env(
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Take environment variables from .env file
+env_file = BASE_DIR / '.env'
+if env_file.exists():
+    environ.Env.read_env(env_file)
+
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-change-me-in-production')
 
-DEBUG = env('DEBUG', default='True').lower() == 'true'
+DEBUG = env('DEBUG', default='True')
 
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[
