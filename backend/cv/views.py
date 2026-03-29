@@ -1,11 +1,11 @@
 import json
+import google.generativeai as genai
 from django.conf import settings
 from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from .models import CV, CVTemplate
 from .serializers import CVSerializer, CVCreateSerializer, CVGenerationSerializer, CVTemplateSerializer
-from dev_diva_quest.ai_service import generate_text
 
 
 @api_view(['POST'])
@@ -18,6 +18,10 @@ def generate_cv(request):
     cv_data = serializer.validated_data
     
     try:
+        # Configure Gemini
+        genai.configure(api_key=settings.GOOGLE_AI_API_KEY)
+        model = genai.GenerativeModel(settings.GEMINI_MODEL)
+        
         # Build structured user data for AI
         user_data = {
             'name': cv_data.get('name', ''),
@@ -55,10 +59,10 @@ Requirements:
 
 Generate the complete CV content in a clean, professional format that can be directly used as a CV document."""
 
-        generated_cv = generate_text(prompt)
+        response = model.generate_content(prompt)
         
-        if not generated_cv:
-            return Response({'error': 'Failed to generate CV: AI service unavailable'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if not response.text:
+            return Response({'error': 'Failed to generate CV: Empty response from AI'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         # Create CV with AI-generated content
         cv = CV.objects.create(
@@ -79,7 +83,7 @@ Generate the complete CV content in a clean, professional format that can be dir
             certifications=cv_data.get('certifications', []),
             skills=cv_data.get('skills', []),
             languages=cv_data.get('languages', []),
-            generated_cv=generated_cv,
+            generated_cv=response.text,
             is_active=True
         )
         
