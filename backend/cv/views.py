@@ -98,6 +98,17 @@ Generate the complete CV content in a clean, professional format that can be dir
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def create_cv(request):
+    serializer = CVCreateSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    cv = serializer.save(user=request.user)
+    return Response(CVSerializer(cv).data, status=status.HTTP_201_CREATED)
+
+
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def get_cvs(request):

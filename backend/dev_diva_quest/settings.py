@@ -18,14 +18,13 @@ SECRET_KEY = env('SECRET_KEY', default='django-insecure-change-me-in-production'
 DEBUG = env('DEBUG', default='True')
 
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[
+ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    'devgirlzz.com.uz',
     'dev-diva-quest-backend.onrender.com',
-    'devgirlz.onrender.com',
+    'devgirlzz.onrender.com',
     os.environ.get('RENDER_EXTERNAL_HOSTNAME', ''),
-])
+]
 ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if h]
 
 # Public URL of the SPA (used in verification emails). Override in production.
@@ -135,6 +134,7 @@ CORS_ALLOWED_ORIGINS = [
     'https://devgirlzz.vercel.app',
     'https://devgirlzz.com.uz',
     'https://www.devgirlzz.com.uz',
+    'https://dev-diva-quest-backend.onrender.com',
     'http://localhost:8080',
     'http://localhost:8001',
     'http://localhost:3000',
