@@ -20,52 +20,67 @@ def generate_cv(request):
     try:
         # Configure Gemini
         genai.configure(api_key=settings.GOOGLE_AI_API_KEY)
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('gemini-2.0-flash-exp')
         
-        # Build CV content
-        cv_content = f"""
-        Name: {cv_data.get('personal_info', {}).get('full_name', '')}
-        Email: {cv_data.get('personal_info', {}).get('email', '')}
-        Phone: {cv_data.get('personal_info', {}).get('phone', '')}
+        # Build structured user data for AI
+        user_data = {
+            'name': cv_data.get('name', ''),
+            'role': cv_data.get('role', ''),
+            'email': cv_data.get('email', ''),
+            'phone': cv_data.get('phone', ''),
+            'location': cv_data.get('location', ''),
+            'github': cv_data.get('github', ''),
+            'linkedin': cv_data.get('linkedin', ''),
+            'telegram': cv_data.get('telegram', ''),
+            'website': cv_data.get('website', ''),
+            'summary': cv_data.get('summary', ''),
+            'experience': cv_data.get('experience', []),
+            'education': cv_data.get('education', []),
+            'projects': cv_data.get('projects', []),
+            'certifications': cv_data.get('certifications', []),
+            'skills': cv_data.get('skills', []),
+            'languages': cv_data.get('languages', [])
+        }
         
-        Summary: {cv_data.get('summary', '')}
-        
-        Experience:
-        {json.dumps(cv_data.get('experience', []), indent=2)}
-        
-        Education:
-        {json.dumps(cv_data.get('education', []), indent=2)}
-        
-        Skills:
-        {json.dumps(cv_data.get('skills', []), indent=2)}
-        
-        Projects:
-        {json.dumps(cv_data.get('projects', []), indent=2)}
-        """
-        
-        prompt = f"""Generate a professional CV based on this information:
-        
-        {cv_content}
-        
-        Format the CV with proper sections:
-        1. Contact Information
-        2. Professional Summary
-        3. Experience
-        4. Education
-        5. Skills
-        6. Projects
-        
-        Use professional language and format. Make it impressive but truthful.
-        Respond with the complete CV content in a clean, readable format."""
+        prompt = f"""You are a professional CV writer and career expert. Generate a professional, ATS-friendly CV based on this user data:
+
+User Information:
+{json.dumps(user_data, indent=2)}
+
+Requirements:
+1. Create a professional, modern CV format
+2. Use strong action verbs and quantifiable achievements
+3. Organize into clear sections: Contact, Summary, Experience, Education, Skills, Projects
+4. Make it impressive but truthful to the provided data
+5. Use professional formatting with clear headings
+6. Include relevant keywords for ATS optimization
+7. Format dates consistently
+8. Keep it concise but comprehensive
+
+Generate the complete CV content in a clean, professional format that can be directly used as a CV document."""
 
         response = model.generate_content(prompt)
         
         # Create CV with AI-generated content
         cv = CV.objects.create(
             user=request.user,
-            title=cv_data.get('title', 'Professional CV'),
-            content=response.text,
-            template=cv_data.get('template', 'modern'),
+            name=cv_data.get('name', 'Professional CV'),
+            role=cv_data.get('role', ''),
+            email=cv_data.get('email', ''),
+            phone=cv_data.get('phone', ''),
+            location=cv_data.get('location', ''),
+            github=cv_data.get('github', ''),
+            linkedin=cv_data.get('linkedin', ''),
+            telegram=cv_data.get('telegram', ''),
+            website=cv_data.get('website', ''),
+            summary=cv_data.get('summary', ''),
+            experience=cv_data.get('experience', []),
+            education=cv_data.get('education', []),
+            projects=cv_data.get('projects', []),
+            certifications=cv_data.get('certifications', []),
+            skills=cv_data.get('skills', []),
+            languages=cv_data.get('languages', []),
+            generated_cv=response.text,
             is_active=True
         )
         

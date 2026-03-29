@@ -22,7 +22,7 @@ class CV(models.Model):
     certifications = models.JSONField(default=list)
     skills = models.JSONField(default=list)
     languages = models.JSONField(default=list)
-    generated_cv = models.TextField(blank=True)
+    generated_cv = models.TextField(blank=True, help_text="AI-generated professional CV content")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
