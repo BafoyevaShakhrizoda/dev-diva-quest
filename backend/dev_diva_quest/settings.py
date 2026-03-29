@@ -138,6 +138,8 @@ DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@devgirlzz.com.uz
 
 # Google Gemini API (FREE)
 GOOGLE_AI_API_KEY = env('GOOGLE_AI_API_KEY', default='')
+# Default model; override if your key/region only supports e.g. gemini-1.5-flash
+GEMINI_MODEL = env('GEMINI_MODEL', default='gemini-2.0-flash')
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'

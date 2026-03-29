@@ -1,5 +1,4 @@
 import json
-import google.generativeai as genai
 from django.conf import settings
 from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
@@ -14,68 +13,77 @@ from .serializers import JobSerializer, JobMatchSerializer, JobApplicationSerial
 @permission_classes([permissions.IsAuthenticated])
 def recommended_jobs(request):
     user = request.user
-    
-    # Get user's latest skill test results
+
     latest_tests = SkillTest.objects.filter(user=user).order_by('-created_at')
-    
+
     if not latest_tests.exists():
         return Response({
             'message': 'No skill tests found. Take a skill test first to get job recommendations.',
             'jobs': []
         })
-    
-    # Get user's best level for each role
+
     user_levels = {}
     for test in latest_tests:
         role = test.role
         if role not in user_levels or get_level_num(test.result_level) > get_level_num(user_levels[role]):
             user_levels[role] = test.result_level
-    
-    # Find matching jobs
-    recommended_jobs = []
-    
-    for role, user_level in user_levels.items():
-        # Find jobs matching user's role and level
-        matching_jobs = Job.objects.filter(
-            Q(role=role) | Q(role='fullstack'),
-            active=True
-        )
-        
-        for job in matching_jobs:
-            # Calculate match score
-            match_score = calculate_match_score(job, role, user_level)
-            
-            if match_score >= 60:  # Only recommend jobs with 60%+ match
-                # Create or update job match
-                job_match, created = JobMatch.objects.get_or_create(
-                    user=user,
-                    job=job,
-                    defaults={
-                        'match_score': match_score,
-                        'skill_level': user_level,
-                        'is_recommended': match_score >= 75
-                    }
-                )
-                
-                if not created:
-                    job_match.match_score = match_score
-                    job_match.skill_level = user_level
-                    job_match.is_recommended = match_score >= 75
-                    job_match.save()
-                
-                recommended_jobs.append(job_match)
-    
-    # Sort by match score
-    recommended_jobs.sort(key=lambda x: x.match_score, reverse=True)
-    
-    # Limit to top 20 recommendations
-    recommended_jobs = recommended_jobs[:20]
-    
-    serializer = JobMatchSerializer(recommended_jobs, many=True)
+
+    roles = list(user_levels.keys())
+    matching_jobs = Job.objects.filter(
+        Q(role__in=roles) | Q(role='fullstack'),
+        active=True,
+    ).distinct()
+
+    jobs_list = list(matching_jobs[:50])
+    if not jobs_list:
+        return Response({
+            'user_levels': user_levels,
+            'total_matches': 0,
+            'jobs': [],
+        })
+
+    ai_scores = {}
+    if settings.GOOGLE_AI_API_KEY:
+        ai_scores = batch_job_match_scores(user_levels, jobs_list)
+
+    recommended = []
+    seen_job_ids = set()
+
+    for job in jobs_list:
+        if job.id in seen_job_ids:
+            continue
+        seen_job_ids.add(job.id)
+        role, user_level = pick_role_level_for_job(job, user_levels)
+        if job.id in ai_scores:
+            match_score = ai_scores[job.id]
+        else:
+            match_score = calculate_match_score_rule_only(job, role, user_level)
+
+        if match_score >= 60:
+            job_match, created = JobMatch.objects.get_or_create(
+                user=user,
+                job=job,
+                defaults={
+                    'match_score': match_score,
+                    'skill_level': user_level,
+                    'is_recommended': match_score >= 75,
+                },
+            )
+            if not created:
+                job_match.match_score = match_score
+                job_match.skill_level = user_level
+                job_match.is_recommended = match_score >= 75
+                job_match.save()
+            recommended.append(job_match)
+
+    recommended.sort(key=lambda x: x.match_score, reverse=True)
+    recommended = recommended[:20]
+
+    serializer = JobMatchSerializer(recommended, many=True)
     return Response({
         'user_levels': user_levels,
-        'total_matches': len(recommended_jobs),
-        'jobs': serializer.data
+        'total_matches': len(recommended),
+        'jobs': serializer.data,
     })
 
 
@@ -253,33 +261,117 @@ def save_job_match(request, job_id):
         )
 
 
-def calculate_match_score(job, user_role, user_level):
-    """Calculate match score between user and job"""
+def pick_role_level_for_job(job, user_levels):
+    """Pick the user role/level row that best fits this job (for storing JobMatch)."""
+    if job.role in user_levels:
+        return job.role, user_levels[job.role]
+    if job.role == 'fullstack':
+        best_role = max(user_levels.keys(), key=lambda r: get_level_num(user_levels[r]))
+        return best_role, user_levels[best_role]
+    best_role = max(user_levels.keys(), key=lambda r: get_level_num(user_levels[r]))
+    return best_role, user_levels[best_role]
+
+
+def calculate_match_score_rule_only(job, user_role, user_level):
+    """Heuristic 0–100 score without AI (fallback when batch/single AI fails)."""
     score = 0
-    
-    # Role matching (40 points)
     if job.role == user_role:
         score += 40
     elif job.role == 'fullstack' or user_role == 'fullstack':
         score += 30
     else:
         score += 10
-    
-    # Level matching (30 points)
     level_match = get_level_match(job.experience_level, user_level)
     score += level_match * 30
-    
-    # AI-powered requirements matching (30 points)
+    score += 15
+    return min(100, int(round(score)))
+
+
+def batch_job_match_scores(user_levels, jobs):
+    """
+    One Gemini request for up to len(jobs) vacancies.
+    Returns dict job_id -> 0–100; empty dict if API missing or parse fails.
+    """
+    from dev_diva_quest.gemini_service import generate_json
+
+    jobs_payload = [
+        {
+            'id': j.id,
+            'title': j.title,
+            'company': j.company,
+            'role': j.role,
+            'experience_level': j.experience_level,
+            'requirements': (j.requirements or '')[:4000],
+        }
+        for j in jobs
+    ]
+    profile = {'role_levels': user_levels}
+    prompt = f"""User skill test results (role -> level): {json.dumps(profile)}
+
+Jobs to score (each row is independent): {json.dumps(jobs_payload)}
+
+Return JSON with this exact shape:
+{{"matches": [{{"job_id": <int>, "match_score": <0-100 integer>, "reason": "<one short sentence>"}}]}}
+
+Rules:
+- Include every job id from the input exactly once.
+- match_score reflects role fit, experience level, and requirements."""
+
+    data = generate_json(
+        prompt,
+        system_instruction='You are an IT recruiting analyst. Output only valid JSON.',
+    )
+    if not data or not isinstance(data, dict):
+        return {}
+    matches = data.get('matches') or data.get('results')
+    if not isinstance(matches, list):
+        return {}
+    out = {}
+    for m in matches:
+        if not isinstance(m, dict):
+            continue
+        jid = m.get('job_id') if m.get('job_id') is not None else m.get('id')
+        if jid is None:
+            continue
+        try:
+            jid = int(jid)
+        except (TypeError, ValueError):
+            continue
+        raw = m.get('match_score') if m.get('match_score') is not None else m.get('score')
+        if raw is None:
+            continue
+        try:
+            score = int(round(float(raw)))
+        except (TypeError, ValueError):
+            continue
+        out[jid] = max(0, min(100, score))
+    return out
+
+
+def calculate_match_score(job, user_role, user_level):
+    """Calculate match score between user and job (single job; one AI JSON call for the 30pt slice)."""
+    score = 0
+
+    if job.role == user_role:
+        score += 40
+    elif job.role == 'fullstack' or user_role == 'fullstack':
+        score += 30
+    else:
+        score += 10
+
+    level_match = get_level_match(job.experience_level, user_level)
+    score += level_match * 30
+
     if settings.GOOGLE_AI_API_KEY:
         try:
             ai_score = get_ai_match_score(job, user_role, user_level)
             score += ai_score * 30
-        except:
-            score += 15  # Default middle score if AI fails
+        except Exception:
+            score += 15
     else:
         score += 15
-    
-    return min(100, score)
+
+    return min(100, int(round(score)))
 
 
 def get_level_match(job_level, user_level):
@@ -299,43 +391,34 @@ def get_level_match(job_level, user_level):
 
 
 def get_ai_match_score(job, user_role, user_level):
-    """Use AI to analyze job requirements and user skills"""
-    try:
-        # Configure Gemini
-        genai.configure(api_key=settings.GOOGLE_AI_API_KEY)
-        model = genai.GenerativeModel('gemini-pro')
-        
-        prompt = f"""Analyze how well a {user_level} {user_role} developer matches this job:
+    """0.0–1.0 fit for requirements slice; JSON response via shared Gemini helper."""
+    from dev_diva_quest.gemini_service import generate_json
 
-Job Title: {job.title}
+    prompt = f"""Job:
+Title: {job.title}
 Company: {job.company}
-Requirements: {job.requirements}
-Experience Level: {job.experience_level}
+Requirements: {(job.requirements or '')[:8000]}
+Role: {job.role}
+Experience level required: {job.experience_level}
 
-User Profile:
-- Role: {user_role}
-- Level: {user_level}
+User profile:
+Role: {user_role}
+Level: {user_level}
 
-Rate the match from 0.0 to 1.0 based on:
-1. Role alignment (40%)
-2. Experience level match (30%)
-3. Requirements compatibility (30%)
+Return JSON: {{"score": <number from 0.0 to 1.0>}}"""
 
-Respond with only a number between 0.0 and 1.0."""
-
-        response = model.generate_content(prompt)
-        score_text = response.text.strip()
-        
-        # Extract numeric score
-        import re
-        score_match = re.search(r'0\.\d+|1\.0|0|1', score_text)
-        if score_match:
-            return float(score_match.group())
-        else:
-            return 0.5  # Default middle score
-            
-    except Exception as e:
-        print(f"AI match score error: {e}")
+    data = generate_json(
+        prompt,
+        system_instruction='You are an IT recruiter. Compare the user profile to the job. Return only JSON.',
+    )
+    if not data or not isinstance(data, dict):
+        return 0.5
+    raw = data.get('score')
+    if raw is None:
+        return 0.5
+    try:
+        return float(max(0.0, min(1.0, float(raw))))
+    except (TypeError, ValueError):
         return 0.5
 
 

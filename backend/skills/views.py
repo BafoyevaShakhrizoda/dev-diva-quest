@@ -1,7 +1,6 @@
 import json
 import logging
 import random
-import google.generativeai as genai
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -13,10 +12,6 @@ from .serializers import (
     QuestionSerializer, SkillTestSerializer, 
     SkillTestCreateSerializer, SkillEvaluationSerializer
 )
-
-# Configure Gemini globally
-genai.configure(api_key=settings.GOOGLE_AI_API_KEY)
-
 
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
@@ -63,9 +58,8 @@ def generate_questions(request):
         )
     
     try:
-        # Use configured Gemini with correct model name
-        model = genai.GenerativeModel('gemini-2.0-flash-exp')
-        
+        from dev_diva_quest.gemini_service import generate_json
+
         prompt = f"""Generate {count} multiple-choice questions for a {role} skill assessment test.
 
 Requirements:
@@ -75,47 +69,55 @@ Requirements:
 - Include a mix of theory and practical scenarios
 - Difficulty should be appropriate for junior to middle level
 
-Format each question exactly like this:
+Return JSON with this exact shape:
 {{
-    "question_text": "Question text here?",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correct_answer": 0,
-    "difficulty": "easy|medium|hard"
+  "questions": [
+    {{
+      "question_text": "Question text here?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correct_answer": 0,
+      "difficulty": "easy"
+    }}
+  ]
 }}
+Use difficulty one of: easy, medium, hard."""
 
-Return only a JSON array of questions, nothing else."""
+        data = generate_json(
+            prompt,
+            system_instruction='You write technical interview questions. Output only valid JSON.',
+        )
+        if not data:
+            return Response(
+                {'error': 'AI is unavailable or returned empty. Check GOOGLE_AI_API_KEY and GEMINI_MODEL.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
 
-        response = model.generate_content(prompt)
-        
-        # Parse JSON from response
-        import re
-        json_match = re.search(r'\[.*\]', response.text, re.DOTALL)
-        
-        if json_match:
-            questions = json.loads(json_match.group())
-            
-            # Save questions to database
-            saved_questions = []
-            for q in questions:
-                question = Question.objects.create(
-                    role=role,
-                    question_text=q['question_text'],
-                    options=q['options'],
-                    correct_answer=q['correct_answer'],
-                    difficulty=q.get('difficulty', 'medium')
-                )
-                saved_questions.append(QuestionSerializer(question).data)
-            
-            return Response({
-                'questions': saved_questions,
-                'message': f'Generated {len(saved_questions)} questions for {role}'
-            })
+        if isinstance(data, list):
+            questions = data
+        elif isinstance(data, dict) and 'questions' in data:
+            questions = data['questions']
         else:
             return Response(
-                {'error': 'Failed to parse AI response'}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {'error': 'Unexpected AI response shape'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-            
+
+        saved_questions = []
+        for q in questions:
+            question = Question.objects.create(
+                role=role,
+                question_text=q['question_text'],
+                options=q['options'],
+                correct_answer=q['correct_answer'],
+                difficulty=q.get('difficulty', 'medium'),
+            )
+            saved_questions.append(QuestionSerializer(question).data)
+
+        return Response({
+            'questions': saved_questions,
+            'message': f'Generated {len(saved_questions)} questions for {role}',
+        })
+
     except Exception as e:
         logger.exception("Question generation failed")
         return Response(
@@ -194,6 +196,59 @@ def save_skill_result(request):
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
+def _ai_skill_evaluation_extras(
+    role,
+    questions,
+    answers,
+    correct_count,
+    total_questions,
+    score_percentage,
+    level,
+):
+    """Personalized mentor feedback via one JSON Gemini call."""
+    from dev_diva_quest.gemini_service import generate_json
+
+    wrong = []
+    for i, answer in enumerate(answers):
+        if i >= len(questions):
+            break
+        q = questions[i]
+        correct_idx = q.get('correct_answer', 0)
+        if answer != correct_idx:
+            wrong.append({
+                'question': (q.get('question_text') or '')[:500],
+                'difficulty': q.get('difficulty', 'medium'),
+            })
+
+    payload = {
+        'role': role,
+        'score': f'{correct_count}/{total_questions}',
+        'percentage': round(score_percentage, 1),
+        'level': level,
+        'missed_items': wrong,
+    }
+    prompt = f"""Test result summary: {json.dumps(payload)}
+
+Return JSON with keys:
+- feedback: string (2-5 sentences, friendly mentor tone, concrete study advice)
+- weak_topics: array of short strings (areas to improve)
+- next_steps: array of short actionable steps"""
+
+    data = generate_json(
+        prompt,
+        system_instruction='You are a supportive coding mentor. Output only valid JSON.',
+    )
+    if not data or not isinstance(data, dict):
+        return None
+    wt = data.get('weak_topics')
+    ns = data.get('next_steps')
+    return {
+        'feedback': data.get('feedback') or '',
+        'weak_topics': wt if isinstance(wt, list) else [],
+        'next_steps': ns if isinstance(ns, list) else [],
+    }
+
+
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])  # Changed to AllowAny for testing
 def evaluate_skill(request):
@@ -206,10 +261,15 @@ def evaluate_skill(request):
     answers = serializer.validated_data['answers']
     
     try:
-        # Calculate score based on total questions
         total_questions = len(questions)
+        if total_questions == 0:
+            return Response(
+                {'error': 'No questions provided'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         correct_count = 0
-        
+
         for i, answer in enumerate(answers):
             # Get the correct answer from question data
             question_data = questions[i]
@@ -230,17 +290,38 @@ def evaluate_skill(request):
             level = 'middle'
         else:
             level = 'senior'
-        
-        # Generate feedback (simplified for demo)
-        feedback = f"You scored {correct_count}/{total_questions} ({score_percentage:.1f}%). Your level: {level.title()}."
-        
+
+        feedback = (
+            f"You scored {correct_count}/{total_questions} ({score_percentage:.1f}%). "
+            f"Your level: {level.title()}."
+        )
+        weak_topics: list = []
+        next_steps: list = []
+
+        if settings.GOOGLE_AI_API_KEY:
+            extras = _ai_skill_evaluation_extras(
+                role=role,
+                questions=questions,
+                answers=answers,
+                correct_count=correct_count,
+                total_questions=total_questions,
+                score_percentage=score_percentage,
+                level=level,
+            )
+            if extras:
+                feedback = extras.get('feedback') or feedback
+                weak_topics = extras.get('weak_topics') or []
+                next_steps = extras.get('next_steps') or []
+
         return Response({
             'score': correct_count,
             'total_questions': total_questions,
             'percentage': score_percentage,
             'level': level,
             'feedback': feedback,
-            'role': role
+            'weak_topics': weak_topics,
+            'next_steps': next_steps,
+            'role': role,
         })
         
     except Exception as e:

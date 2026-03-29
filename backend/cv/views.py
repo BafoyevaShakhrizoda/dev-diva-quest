@@ -20,7 +20,7 @@ def generate_cv(request):
     try:
         # Configure Gemini
         genai.configure(api_key=settings.GOOGLE_AI_API_KEY)
-        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        model = genai.GenerativeModel(settings.GEMINI_MODEL)
         
         # Build structured user data for AI
         user_data = {
