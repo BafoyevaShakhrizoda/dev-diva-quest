@@ -24,7 +24,8 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[
 ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if h]
 
 # Public URL of the SPA (used in verification emails). Override in production.
-FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:8080').rstrip('/')
+FRONTEND_URL = env('FRONTEND_URL', default='https://devgirlzz.vercel.app').rstrip('/')
+BACKEND_URL = env('BACKEND_URL', default='https://dev-diva-quest-backend.onrender.com').rstrip('/')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -114,27 +115,28 @@ AUTH_USER_MODEL = 'users.User'
 
 # Email configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+EMAIL_HOST = env('EMAIL_HOST', default='smtp.sendgrid.net')
+EMAIL_PORT = env('EMAIL_PORT', default='587')
+EMAIL_USE_TLS = env('EMAIL_USE_TLS', default='True').lower() == 'true'
 EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@devgirlzz.com.uz')
 
-# Alternative email services (uncomment if Gmail doesn't work)
-# SendGrid (FREE 100 emails/day)
-# EMAIL_HOST = 'smtp.sendgrid.net'
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = env('SENDGRID_API_KEY', default='')
-# EMAIL_HOST_PASSWORD = env('SENDGRID_API_KEY', default='')
+# Email service configuration
+EMAIL_SERVICE = env('EMAIL_SERVICE', default='sendgrid')  # sendgrid, gmail, mailgun
 
-# Mailgun (FREE 5,000 emails/month)
-# EMAIL_HOST = 'smtp.mailgun.org'
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = env('MAILGUN_API_KEY', default='')
-# EMAIL_HOST_PASSWORD = env('MAILGUN_API_KEY', default='')
+# CORS settings for production
+CORS_ALLOWED_ORIGINS = [
+    'https://devgirlzz.vercel.app',
+    'https://devgirlzz.com.uz',
+    'https://www.devgirlzz.com.uz',
+    'http://localhost:8080',
+    'http://localhost:3000',
+    'http://127.0.0.1:8080',
+    'http://127.0.0.1:3000',
+]
+
+CORS_ALLOW_CREDENTIALS = True
 
 # Google Gemini API (FREE)
 GOOGLE_AI_API_KEY = env('GOOGLE_AI_API_KEY', default='')
