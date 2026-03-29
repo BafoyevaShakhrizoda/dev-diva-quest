@@ -120,12 +120,12 @@ AUTH_USER_MODEL = 'users.User'
 
 # Email configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = env('EMAIL_HOST', default='smtp.sendgrid.net')
+EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = env('EMAIL_PORT', default='587')
 EMAIL_USE_TLS = env('EMAIL_USE_TLS', default='True').lower() == 'true'
-EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='apikey')
-EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
-DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@devgirlzz.com.uz')
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='shahrizodabafoyeva0@gmail.com')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='vlly nvlh bvmk mfdr')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='shahrizodabafoyeva0@gmail.com')
 
 # Email service configuration
 EMAIL_SERVICE = env('EMAIL_SERVICE', default='sendgrid')  # sendgrid, gmail, mailgun
