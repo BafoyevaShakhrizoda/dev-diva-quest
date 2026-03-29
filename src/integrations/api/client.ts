@@ -66,12 +66,31 @@ async function request(
     const t = getStoredToken();
     if (t) headers.Authorization = `Token ${t}`;
   }
-  const res = await fetch(url, {
-    method,
-    headers,
-    credentials: "omit",
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method,
+      headers,
+      credentials: "omit",
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch (cause) {
+    const hint =
+      typeof cause === "object" && cause !== null && "message" in cause
+        ? String((cause as Error).message)
+        : String(cause);
+    const isNetwork =
+      hint.includes("fetch") ||
+      hint.includes("NetworkError") ||
+      hint.includes("Failed to fetch");
+    const msg = isNetwork
+      ? `Cannot reach the API (${API_BASE_URL}). On production, set VITE_API_BASE_URL to your Django /api/ URL when building the frontend, and ensure the backend allows this site in CORS.`
+      : hint;
+    const err = new Error(msg) as Error & { status?: number; data?: unknown };
+    err.status = 0;
+    err.data = { detail: msg };
+    throw err;
+  }
   const data = await parseJson(res);
   if (!res.ok) {
     const o = data && typeof data === "object" ? (data as Record<string, unknown>) : {};

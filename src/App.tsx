@@ -13,6 +13,7 @@ import Jobs from "./pages/Jobs";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import VerifyEmail from "./pages/VerifyEmail";
+import AdminRedirect from "./pages/AdminRedirect";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,8 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/verify-email/:uid/:token" element={<VerifyEmail />} />
+            <Route path="/admin" element={<AdminRedirect />} />
+            <Route path="/admin/*" element={<AdminRedirect />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

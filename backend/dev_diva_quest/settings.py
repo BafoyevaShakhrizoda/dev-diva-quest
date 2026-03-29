@@ -213,11 +213,18 @@ CORS_ALLOWED_ORIGINS = env.list(
     'CORS_ALLOWED_ORIGINS',
     default=[
         'https://devgirlzz.vercel.app',
+        'https://devgirlzz.onrender.com',
         'http://localhost:8080',
         'http://localhost:3000',
         'http://127.0.0.1:8080',
     ],
 )
+
+# Allow any Render / Vercel preview URL when the SPA is not in the list above (avoids CORS blocking registration).
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r'^https://[\w-]+\.onrender\.com$',
+    r'^https://[\w-]+\.vercel\.app$',
+]
 
 CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=False)
 CORS_ALLOW_CREDENTIALS = True
