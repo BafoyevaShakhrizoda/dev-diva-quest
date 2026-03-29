@@ -1,6 +1,6 @@
 const rawBase =
   import.meta.env.VITE_API_BASE_URL?.trim() ||
-  "https://dev-diva-quest-backend.onrender.com/api/";
+  "https://devgirlzz-tine.onrender.com/api/";
 const API_BASE_URL = rawBase.replace(/\/?$/, "/");
 
 const AUTH_TOKEN_KEY = "devgirlz_token";

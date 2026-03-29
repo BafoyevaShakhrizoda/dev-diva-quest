@@ -21,15 +21,16 @@ DEBUG = env('DEBUG', default='True')
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
+    'devgirlzz-tine.onrender.com',
     'dev-diva-quest-backend.onrender.com',
-    'devgirlzz.onrender.com',
+    'devgirlz.onrender.com',
     os.environ.get('RENDER_EXTERNAL_HOSTNAME', ''),
 ]
 ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if h]
 
 # Public URL of the SPA (used in verification emails). Override in production.
-FRONTEND_URL = env('FRONTEND_URL', default='https://devgirlzz.vercel.app').rstrip('/')
-BACKEND_URL = env('BACKEND_URL', default='https://dev-diva-quest-backend.onrender.com').rstrip('/')
+FRONTEND_URL = env('FRONTEND_URL', default='https://devgirlzz.vercel.com').rstrip('/')
+BACKEND_URL = env('BACKEND_URL', default='https://devgirlzz-tine.onrender.com').rstrip('/')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -131,10 +132,12 @@ EMAIL_SERVICE = env('EMAIL_SERVICE', default='sendgrid')  # sendgrid, gmail, mai
 
 # CORS settings for production
 CORS_ALLOWED_ORIGINS = [
+    'https://devgirlzz.vercel.com',
     'https://devgirlzz.vercel.app',
     'https://devgirlzz.com.uz',
     'https://www.devgirlzz.com.uz',
     'https://dev-diva-quest-backend.onrender.com',
+    'https://devgirlzz-tine.onrender.com',
     'http://localhost:8080',
     'http://localhost:8001',
     'http://localhost:3000',
