@@ -141,6 +141,13 @@ GOOGLE_AI_API_KEY = env('GOOGLE_AI_API_KEY', default='')
 # Default model; override if your key/region only supports e.g. gemini-1.5-flash
 GEMINI_MODEL = env('GEMINI_MODEL', default='gemini-2.0-flash')
 
+# OpenAI API Configuration
+OPENAI_API_KEY = env('OPENAI_API_KEY', default='')
+OPENAI_MODEL = env('OPENAI_MODEL', default='gpt-3.5-turbo')
+
+# AI Provider Selection: 'gemini' or 'openai'
+AI_PROVIDER = env('AI_PROVIDER', default='openai')  # Default to OpenAI for deployment
+
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
