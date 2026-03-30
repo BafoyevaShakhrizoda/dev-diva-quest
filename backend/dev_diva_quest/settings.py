@@ -151,7 +151,7 @@ CORS_ALLOW_CREDENTIALS = True
 # Google Gemini API (FREE)
 GOOGLE_AI_API_KEY = env('GOOGLE_AI_API_KEY', default='')
 # Default model; override if your key/region only supports e.g. gemini-1.5-flash
-GEMINI_MODEL = env('GEMINI_MODEL', default='gemini-1.5-flash')
+GEMINI_MODEL = env('GEMINI_MODEL', default='gemini-2.5-flash')
 
 # OpenAI API Configuration
 OPENAI_API_KEY = env('OPENAI_API_KEY', default='')
