@@ -10,8 +10,9 @@ class User(AbstractUser):
         ('senior', 'Senior'),
     ]
     
-    # Email field made optional
+    # Email field made optional but kept for login
     email = models.EmailField(unique=True, blank=True, null=True)
+    username = models.CharField(max_length=150, unique=True)  # Added username field
     first_name = models.CharField(max_length=100, blank=True)
     last_name = models.CharField(max_length=100, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, blank=True, null=True)
@@ -20,8 +21,8 @@ class User(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    USERNAME_FIELD = 'username'  # Changed from email to username
-    REQUIRED_FIELDS = []  # No required fields besides username and password
+    USERNAME_FIELD = 'username'  # Use username for login
+    REQUIRED_FIELDS = []  # No required fields besides password
 
     def __str__(self):
         return self.username or self.email or str(self.id)

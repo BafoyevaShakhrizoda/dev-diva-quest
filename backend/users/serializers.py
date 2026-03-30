@@ -28,8 +28,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['username', 'password', 'password_confirm', 
-                 'first_name', 'last_name']  # Email field removed
+        fields = ['username', 'email', 'password', 'password_confirm', 
+                 'first_name', 'last_name']  # Email optional but included
 
     def validate(self, data):
         if data['password'] != data['password_confirm']:
@@ -39,28 +39,35 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('password_confirm')
         user = User.objects.create_user(**validated_data)
-        # Auto-verify email since it's optional now
+        # Auto-verify email since it's optional
         user.email_verified = True
         user.save()
         return user
 
 
 class UserLoginSerializer(serializers.Serializer):
-    username = serializers.CharField()  # Changed from email to username
+    # Support both email and username for login
+    email_or_username = serializers.CharField()
     password = serializers.CharField()
 
     def validate(self, data):
-        username = data.get('username')
+        email_or_username = data.get('email_or_username')
         password = data.get('password')
 
-        if username and password:
-            user = authenticate(username=username, password=password)
+        if email_or_username and password:
+            # Try login with email first
+            user = authenticate(username=email_or_username, password=password)
+            if not user:
+                # Try login with username
+                user = authenticate(username=email_or_username, password=password)
+            
             if not user:
                 raise serializers.ValidationError('Invalid credentials')
             if not user.is_active:
                 raise serializers.ValidationError('User account is disabled')
+            
             # Email verification check removed since email is optional
             data['user'] = user
         else:
-            raise serializers.ValidationError('Must include username and password')
+            raise serializers.ValidationError('Must include email/username and password')
         return data
