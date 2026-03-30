@@ -10,20 +10,21 @@ class User(AbstractUser):
         ('senior', 'Senior'),
     ]
     
-    email = models.EmailField(unique=True)
+    # Email field made optional
+    email = models.EmailField(unique=True, blank=True, null=True)
     first_name = models.CharField(max_length=100, blank=True)
     last_name = models.CharField(max_length=100, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, blank=True, null=True)
-    email_verified = models.BooleanField(default=False)
+    email_verified = models.BooleanField(default=True)  # Default to True since email is optional
     email_verification_token = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
+    USERNAME_FIELD = 'username'  # Changed from email to username
+    REQUIRED_FIELDS = []  # No required fields besides username and password
 
     def __str__(self):
-        return self.email
+        return self.username or self.email or str(self.id)
 
 
 class UserProfile(models.Model):

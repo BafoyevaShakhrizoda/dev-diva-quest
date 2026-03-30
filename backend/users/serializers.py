@@ -28,8 +28,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'password_confirm', 
-                 'first_name', 'last_name']
+        fields = ['username', 'password', 'password_confirm', 
+                 'first_name', 'last_name']  # Email field removed
 
     def validate(self, data):
         if data['password'] != data['password_confirm']:
@@ -39,30 +39,28 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('password_confirm')
         user = User.objects.create_user(**validated_data)
-        # Auto-verify email for demo purposes
+        # Auto-verify email since it's optional now
         user.email_verified = True
         user.save()
         return user
 
 
 class UserLoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    username = serializers.CharField()  # Changed from email to username
     password = serializers.CharField()
 
     def validate(self, data):
-        email = data.get('email')
+        username = data.get('username')
         password = data.get('password')
 
-        if email and password:
-            user = authenticate(username=email, password=password)
+        if username and password:
+            user = authenticate(username=username, password=password)
             if not user:
                 raise serializers.ValidationError('Invalid credentials')
             if not user.is_active:
                 raise serializers.ValidationError('User account is disabled')
-            if not getattr(user, 'email_verified', True):
-                # Email verification disabled for demo
-                pass  # Allow login without email verification
+            # Email verification check removed since email is optional
             data['user'] = user
         else:
-            raise serializers.ValidationError('Must include email and password')
+            raise serializers.ValidationError('Must include username and password')
         return data
