@@ -15,6 +15,7 @@ import Profile from "./pages/Profile";
 import VerifyEmail from "./pages/VerifyEmail";
 import AdminRedirect from "./pages/AdminRedirect";
 import NotFound from "./pages/NotFound";
+import Career from "./pages/Career";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/careers" element={<Index />} />
+            <Route path="/career" element={<Career />} />
             <Route path="/jobs" element={<Jobs />} />
             <Route path="/test" element={<SkillTest />} />
             <Route path="/resources" element={<Resources />} />
