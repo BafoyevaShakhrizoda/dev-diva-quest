@@ -25,7 +25,7 @@ class CVCreateSerializer(serializers.ModelSerializer):
 class CVGenerationSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=200)
     role = serializers.CharField(max_length=100)
-    email = serializers.EmailField()
+    email = serializers.EmailField(required=False)  # Made optional
     phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
     location = serializers.CharField(max_length=100)
     github = serializers.URLField(required=False, allow_blank=True)
@@ -33,8 +33,8 @@ class CVGenerationSerializer(serializers.Serializer):
     telegram = serializers.CharField(max_length=100, required=False, allow_blank=True)
     website = serializers.URLField(required=False, allow_blank=True)
     summary = serializers.CharField(max_length=5000)
-    experience = serializers.ListField(required=False)
-    education = serializers.ListField(required=False)
+    experience = serializers.CharField(required=False, allow_blank=True)  # Changed from ListField to CharField
+    education = serializers.CharField(required=False, allow_blank=True)  # Changed from ListField to CharField
     projects = serializers.ListField(required=False)
     certifications = serializers.ListField(required=False)
     skills = serializers.ListField(required=False)

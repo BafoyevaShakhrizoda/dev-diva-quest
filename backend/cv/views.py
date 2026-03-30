@@ -34,8 +34,8 @@ def generate_cv(request):
             'telegram': cv_data.get('telegram', ''),
             'website': cv_data.get('website', ''),
             'summary': cv_data.get('summary', ''),
-            'experience': cv_data.get('experience', []),
-            'education': cv_data.get('education', []),
+            'experience': cv_data.get('experience', ''),  # Changed to handle string
+            'education': cv_data.get('education', ''),  # Changed to handle string
             'projects': cv_data.get('projects', []),
             'certifications': cv_data.get('certifications', []),
             'skills': cv_data.get('skills', []),
