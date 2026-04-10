@@ -16,6 +16,7 @@ import VerifyEmail from "./pages/VerifyEmail";
 import AdminRedirect from "./pages/AdminRedirect";
 import NotFound from "./pages/NotFound";
 import Career from "./pages/Career";
+import CompetitorAnalysis from "./pages/CompetitorAnalysis";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/careers" element={<Index />} />
             <Route path="/career" element={<Career />} />
             <Route path="/jobs" element={<Jobs />} />
+            <Route path="/competitor-analysis" element={<CompetitorAnalysis />} />
             <Route path="/test" element={<SkillTest />} />
             <Route path="/resources" element={<Resources />} />
             <Route path="/cv" element={<CVBuilder />} />
