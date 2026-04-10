@@ -55,6 +55,7 @@ const AppNav = () => {
           <AppNavLink to="/cv">CV Builder</AppNavLink>
           <AppNavLink to="/careers">Jobs</AppNavLink>
           <AppNavLink to="/resources">Resources</AppNavLink>
+          <AppNavLink to="/competitor-analysis">Agent</AppNavLink>
         </div>
 
         {/* User area */}
