@@ -22,7 +22,14 @@ DEBUG = env('DEBUG', default='True')
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 _render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME', '').strip()
 if _render_host and _render_host not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS = [*ALLOWED_HOSTS, _render_host]
+    ALLOWED_HOSTS.append(_render_host)
+if os.environ.get('VERCEL') or os.environ.get('VERCEL_URL'):
+    for host in ('.vercel.app', 'devgirlzz.com.uz', 'www.devgirlzz.com.uz'):
+        if host not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(host)
+    _vercel_url = os.environ.get('VERCEL_URL', '').strip()
+    if _vercel_url and _vercel_url not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_vercel_url)
 
 # SPA URL (verification email links). Local Vite default: 8080 (see vite.config).
 FRONTEND_URL = env('FRONTEND_URL', default='http://127.0.0.1:8080').rstrip('/')
@@ -159,8 +166,8 @@ ADMIN_SITE_HEADER = "Dev Diva Quest Admin"
 ADMIN_SITE_TITLE = "Dev Diva Quest Administration"
 ADMIN_INDEX_TITLE = "Welcome to Dev Diva Quest Admin"
 
-# Admin panel URLs for production
-ADMIN_URL = '/admin/'
+# Django admin URL (separate from frontend staff panel at /admin)
+ADMIN_URL = '/django-admin/'
 
 # Static files for production
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
@@ -169,11 +176,11 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Admin panel authentication
-LOGIN_URL = '/admin/login/'
-LOGOUT_URL = '/admin/logout/'
-LOGIN_REDIRECT_URL = '/admin/'
-LOGOUT_REDIRECT_URL = '/admin/'
+# Django admin authentication
+LOGIN_URL = '/django-admin/login/'
+LOGOUT_URL = '/django-admin/logout/'
+LOGIN_REDIRECT_URL = '/django-admin/'
+LOGOUT_REDIRECT_URL = '/django-admin/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
