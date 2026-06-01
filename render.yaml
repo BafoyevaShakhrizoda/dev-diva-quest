@@ -1,0 +1,41 @@
+# Render Blueprint — backend API only
+# Frontend: Vercel (devgirlzz.com.uz)
+# Database: Neon PostgreSQL (DATABASE_URL)
+
+services:
+  - type: web
+    name: devgirlzz-api
+    runtime: python
+    rootDir: backend
+    buildCommand: chmod +x render_build.sh render_start.sh && ./render_build.sh
+    startCommand: ./render_start.sh
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: GOOGLE_AI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: FRONTEND_URL
+        value: https://devgirlzz.com.uz
+      - key: BACKEND_URL
+        value: https://api.devgirlzz.com.uz
+      - key: ALLOWED_HOSTS
+        value: api.devgirlzz.com.uz,devgirlzz.com.uz,www.devgirlzz.com.uz
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://devgirlzz.com.uz,https://www.devgirlzz.com.uz
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://devgirlzz.com.uz,https://www.devgirlzz.com.uz,https://api.devgirlzz.com.uz
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_EMAIL
+        value: admin@devgirlzz.com.uz

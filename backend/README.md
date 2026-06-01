@@ -34,7 +34,7 @@ cp .env.example .env
 
 Update `.env` with your actual values:
 - `SECRET_KEY`: Generate a new Django secret key
-- `OPENAI_API_KEY`: Your OpenAI API key
+- `GOOGLE_AI_API_KEY`: Your Google AI (Gemini) API key
 - Database credentials
 
 ### 4. Database Setup
@@ -58,10 +58,43 @@ python manage.py migrate
 python manage.py createsuperuser
 ```
 
-### 7. Run Development Server
+Vakansiyalar (`Job`) va kerak bo‘lsa skill savollari (`Question`) **admin** orqali kiritiladi. Avvalgi `create_*.py` demo skriptlari va `load_questions` / `load_jobs` management buyruqlari olib tashlangan — bitta manba admin.
+
+**Namuna vakansiyalar (ixtiyoriy, dev):** migratsiyadan keyin:
 
 ```bash
+python manage.py loaddata sample_jobs
+```
+
+Bu `jobs/fixtures/sample_jobs.json` dagi 10 ta turli rol (frontend, backend, fullstack, mobile, devops, designer) bo‘yicha ish qo‘shadi (`pk` 501–510). Takroriy yuklash mavjud yozuvlarni yangilaydi.
+
+### Gemini kalit ishlamasa
+
+Kalit **`backend/.env`** ichida bo‘lishi kerak (`GOOGLE_AI_API_KEY=...`). Loyiha ildizidagi frontend `.env` ga yozilsa **Django o‘qimaydi**.
+
+Tekshiruv (venv bilan):
+
+```bash
+cd backend && source venv/bin/activate
+python manage.py check_gemini
+```
+
+Agar model xatosi bo‘lsa, `.env` da `GEMINI_MODEL=gemini-2.0-flash` yoki `gemini-1.5-flash` ni sinab ko‘ring.
+
+### 7. Run Development Server
+
+**Muhim:** loyiha papkasida virtual env yoqing yoki to‘g‘ridan-to‘g‘ri `venv` Python ishlating — aks holda `ModuleNotFoundError: google.generativeai` chiqadi.
+
+```bash
+source venv/bin/activate   # Windows: venv\Scripts\activate
+pip install -r requirements.txt
 python manage.py runserver
+```
+
+Yoki aktivatsiyasiz:
+
+```bash
+./venv/bin/python manage.py runserver
 ```
 
 The API will be available at `http://localhost:8000`

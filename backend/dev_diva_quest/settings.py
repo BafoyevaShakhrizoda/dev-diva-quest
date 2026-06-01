@@ -18,19 +18,15 @@ SECRET_KEY = env('SECRET_KEY', default='django-insecure-change-me-in-production'
 DEBUG = env('DEBUG', default='True')
 
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    'devgirlzz-tine.onrender.com',
-    'dev-diva-quest-backend.onrender.com',
-    'devgirlz.onrender.com',
-    os.environ.get('RENDER_EXTERNAL_HOSTNAME', ''),
-]
-ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if h]
+# Local-first; add your production domain via ALLOWED_HOSTS in .env when you deploy
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+_render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME', '').strip()
+if _render_host and _render_host not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS = [*ALLOWED_HOSTS, _render_host]
 
-# Public URL of the SPA (used in verification emails). Override in production.
-FRONTEND_URL = env('FRONTEND_URL', default='https://devgirlzz.vercel.com').rstrip('/')
-BACKEND_URL = env('BACKEND_URL', default='https://devgirlzz-tine.onrender.com').rstrip('/')
+# SPA URL (verification email links). Local Vite default: 8080 (see vite.config).
+FRONTEND_URL = env('FRONTEND_URL', default='http://127.0.0.1:8080').rstrip('/')
+BACKEND_URL = env('BACKEND_URL', default='http://127.0.0.1:8000').rstrip('/')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -46,6 +42,8 @@ INSTALLED_APPS = [
     'jobs',
     'skills',
     'cv',
+    'events',
+    'admin_panel',
 ]
 
 MIDDLEWARE = [
@@ -123,30 +121,16 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = env('EMAIL_PORT', default='587')
 EMAIL_USE_TLS = env('EMAIL_USE_TLS', default='True').lower() == 'true'
-EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='shahrizodabafoyeva0@gmail.com')
-EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='vlly nvlh bvmk mfdr')
-DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='shahrizodabafoyeva0@gmail.com')
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='') or EMAIL_HOST_USER or 'webmaster@localhost'
 
 # Email service configuration
 EMAIL_SERVICE = env('EMAIL_SERVICE', default='sendgrid')  # sendgrid, gmail, mailgun
 
-# CORS settings for production
-CORS_ALLOWED_ORIGINS = [
-    'https://devgirlzz.vercel.com',
-    'https://devgirlzz.vercel.app',
-    'https://devgirlzz.com.uz',
-    'https://www.devgirlzz.com.uz',
-    'https://dev-diva-quest-backend.onrender.com',
-    'https://devgirlzz-tine.onrender.com',
-    'http://localhost:8080',
-    'http://localhost:8001',
-    'http://localhost:3000',
-    'http://127.0.0.1:8080',
-    'http://127.0.0.1:8001',
-    'http://127.0.0.1:3000',
-]
-
-CORS_ALLOW_CREDENTIALS = True
+# Local dev: print emails to console when SMTP is not configured
+if DEBUG and not (EMAIL_HOST_USER and EMAIL_HOST_PASSWORD):
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Google Gemini API (FREE)
 GOOGLE_AI_API_KEY = env('GOOGLE_AI_API_KEY', default='')
@@ -205,7 +189,12 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20,
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
-    ]
+    ],
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.FormParser',
+        'rest_framework.parsers.MultiPartParser',
+    ],
 }
 
 # JWT Settings (Temporarily commented out)
@@ -233,26 +222,28 @@ if DEBUG:
 CORS_ALLOWED_ORIGINS = env.list(
     'CORS_ALLOWED_ORIGINS',
     default=[
-        'https://devgirlzz.vercel.app',
-        'https://devgirlzz.onrender.com',
         'http://localhost:8080',
         'http://localhost:5173',
         'http://localhost:3000',
         'http://127.0.0.1:8080',
         'http://127.0.0.1:5173',
+        'http://127.0.0.1:3000',
     ],
 )
 
-# Allow any Render / Vercel preview URL when the SPA is not in the list above (avoids CORS blocking registration).
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r'^https://[\w-]+\.onrender\.com$',
-    r'^https://[\w-]+\.vercel\.app$',
-]
+# Optional: e.g. preview deploys — set in .env as comma-separated regex strings if needed
+CORS_ALLOWED_ORIGIN_REGEXES = env.list('CORS_ALLOWED_ORIGIN_REGEXES', default=[])
 
 CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=False)
 CORS_ALLOW_CREDENTIALS = True
 
-OPENAI_API_KEY = env('OPENAI_API_KEY', default='')
+# Admin / session POST from HTTPS frontends (login form, etc.)
+CSRF_TRUSTED_ORIGINS = env.list(
+    'CSRF_TRUSTED_ORIGINS',
+    default=[],
+)
+if not CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS = list(CORS_ALLOWED_ORIGINS)
 
 LOGGING = {
     'version': 1,

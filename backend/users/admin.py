@@ -1,12 +1,5 @@
 from django.contrib import admin
-from .models import User, UserProfile
-
-
-class UserAdmin(admin.ModelAdmin):
-    list_display = ['email', 'username', 'first_name', 'last_name', 'email_verified', 'created_at']
-    list_filter = ['email_verified', 'created_at', 'is_staff', 'is_active']
-    search_fields = ['email', 'username', 'first_name', 'last_name']
-    readonly_fields = ['created_at', 'updated_at']
+from .models import UserProfile
 
 
 class UserProfileAdmin(admin.ModelAdmin):

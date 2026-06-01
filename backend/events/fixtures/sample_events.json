@@ -1,0 +1,114 @@
+[
+  {
+    "model": "events.event",
+    "pk": 1,
+    "fields": {
+      "title": "Uzbekistan ICT Week — National Digital Transformation Forum",
+      "summary": "Government and industry panels on cloud adoption, cybersecurity, and software export programs for Uzbekistan’s growing tech sector.",
+      "external_url": "https://digital.gov.uz",
+      "location": "Tashkent, Uzbekistan",
+      "starts_at": "2026-05-20",
+      "is_active": true,
+      "sort_order": 0,
+      "created_at": "2026-05-01T10:00:00Z"
+    }
+  },
+  {
+    "model": "events.event",
+    "pk": 2,
+    "fields": {
+      "title": "Women in Tech Central Asia Networking Night",
+      "summary": "Evening meetup for engineers, product managers, and students—mentoring circles and lightning talks entirely in English.",
+      "external_url": "https://it-park.uz",
+      "location": "Tashkent, Uzbekistan",
+      "starts_at": "2026-05-28",
+      "is_active": true,
+      "sort_order": 1,
+      "created_at": "2026-05-01T10:00:00Z"
+    }
+  },
+  {
+    "model": "events.event",
+    "pk": 3,
+    "fields": {
+      "title": "IT Park Developer Community Meetup",
+      "summary": "Hands-on sessions on Django, React, and mobile stacks; hallway track with startups hiring backend and frontend roles.",
+      "external_url": "https://it-park.uz",
+      "location": "Tashkent, Uzbekistan",
+      "starts_at": "2026-06-04",
+      "is_active": true,
+      "sort_order": 2,
+      "created_at": "2026-05-01T10:00:00Z"
+    }
+  },
+  {
+    "model": "events.event",
+    "pk": 4,
+    "fields": {
+      "title": "Cybersecurity & Cloud Day Uzbekistan",
+      "summary": "Zero-trust architecture, AWS and Yandex Cloud case studies, and career paths for cloud and security analysts.",
+      "external_url": "https://digital.gov.uz",
+      "location": "Tashkent, Uzbekistan",
+      "starts_at": "2026-06-14",
+      "is_active": true,
+      "sort_order": 3,
+      "created_at": "2026-05-01T10:00:00Z"
+    }
+  },
+  {
+    "model": "events.event",
+    "pk": 5,
+    "fields": {
+      "title": "Frontend & UX Uzbekistan Workshop Series",
+      "summary": "Design systems, accessibility, and React performance—a full-day lab for intermediate developers and designers.",
+      "external_url": "https://it-park.uz",
+      "location": "Hybrid • Tashkent, Uzbekistan",
+      "starts_at": "2026-06-22",
+      "is_active": true,
+      "sort_order": 4,
+      "created_at": "2026-05-01T10:00:00Z"
+    }
+  },
+  {
+    "model": "events.event",
+    "pk": 6,
+    "fields": {
+      "title": "Samarkand Tech & Startup Weekend",
+      "summary": "Pitch practice, MVP sprints, and investor office hours focused on SaaS and fintech teams from Uzbekistan and the region.",
+      "external_url": "https://it-park.uz",
+      "location": "Samarkand, Uzbekistan",
+      "starts_at": "2026-07-05",
+      "is_active": true,
+      "sort_order": 5,
+      "created_at": "2026-05-01T10:00:00Z"
+    }
+  },
+  {
+    "model": "events.event",
+    "pk": 7,
+    "fields": {
+      "title": "DevOps Uzbekistan Community Meetup",
+      "summary": "Kubernetes fundamentals, observability stacks, and CI/CD patterns for teams shipping multiple services per week.",
+      "external_url": "https://it-park.uz",
+      "location": "Tashkent, Uzbekistan",
+      "starts_at": "2026-07-12",
+      "is_active": true,
+      "sort_order": 6,
+      "created_at": "2026-05-01T10:00:00Z"
+    }
+  },
+  {
+    "model": "events.event",
+    "pk": 8,
+    "fields": {
+      "title": "AI & Machine Learning Uzbekistan Showcase",
+      "summary": "Local teams present LLM applications, computer vision demos, and responsible-AI workflows for SMEs.",
+      "external_url": "https://digital.gov.uz",
+      "location": "Tashkent, Uzbekistan",
+      "starts_at": "2026-08-01",
+      "is_active": true,
+      "sort_order": 7,
+      "created_at": "2026-05-01T10:00:00Z"
+    }
+  }
+]

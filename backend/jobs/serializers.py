@@ -31,22 +31,24 @@ class JobApplicationSerializer(serializers.ModelSerializer):
 
 
 class JobApplicationCreateSerializer(serializers.ModelSerializer):
+    """Job comes from URL in the view (context['job']), not from the request body."""
+
     class Meta:
         model = JobApplication
-        fields = ['job', 'cv', 'cover_letter']
-    
+        fields = ['cv', 'cover_letter']
+
     def validate(self, data):
         user = self.context['request'].user
-        job = data['job']
-        
-        # Check if user already applied
+        job = self.context.get('job')
+        if job is None:
+            raise serializers.ValidationError('Job context missing.')
+
         if JobApplication.objects.filter(user=user, job=job).exists():
-            raise serializers.ValidationError("You have already applied for this job.")
-        
-        # Check if job is active
+            raise serializers.ValidationError('You have already applied for this job.')
+
         if not job.active:
-            raise serializers.ValidationError("This job is no longer active.")
-        
+            raise serializers.ValidationError('This job is no longer active.')
+
         return data
 
 

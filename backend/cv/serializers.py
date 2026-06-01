@@ -25,20 +25,20 @@ class CVCreateSerializer(serializers.ModelSerializer):
 class CVGenerationSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=200)
     role = serializers.CharField(max_length=100)
-    email = serializers.EmailField(required=False)  # Made optional
+    email = serializers.EmailField(required=False, allow_blank=True)
     phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
-    location = serializers.CharField(max_length=100)
-    github = serializers.URLField(required=False, allow_blank=True)
-    linkedin = serializers.URLField(required=False, allow_blank=True)
+    location = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    github = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    linkedin = serializers.CharField(max_length=500, required=False, allow_blank=True)
     telegram = serializers.CharField(max_length=100, required=False, allow_blank=True)
-    website = serializers.URLField(required=False, allow_blank=True)
-    summary = serializers.CharField(max_length=5000)
-    experience = serializers.CharField(required=False, allow_blank=True)  # Changed from ListField to CharField
-    education = serializers.CharField(required=False, allow_blank=True)  # Changed from ListField to CharField
-    projects = serializers.ListField(required=False)
-    certifications = serializers.ListField(required=False)
-    skills = serializers.ListField(required=False)
-    languages = serializers.ListField(required=False)
+    website = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    summary = serializers.CharField(max_length=5000, required=False, allow_blank=True, default="")
+    experience = serializers.JSONField(required=False)
+    education = serializers.JSONField(required=False)
+    projects = serializers.JSONField(required=False)
+    certifications = serializers.JSONField(required=False)
+    skills = serializers.JSONField(required=False)
+    languages = serializers.JSONField(required=False)
 
 
 class CVTemplateSerializer(serializers.ModelSerializer):

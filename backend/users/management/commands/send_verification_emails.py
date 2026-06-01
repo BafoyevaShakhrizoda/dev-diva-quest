@@ -18,8 +18,8 @@ class Command(BaseCommand):
             user.email_verification_token = token
             user.save()
             
-            # Send verification email
-            verification_url = f"https://devgirlzz.com.uz/verify-email/{token}"
+            base = getattr(settings, "FRONTEND_URL", "http://127.0.0.1:8080").rstrip("/")
+            verification_url = f"{base}/verify-email/{token}"
             
             subject = "Verify your Dev Diva Quest account"
             message = f"""

@@ -1,0 +1,67 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: devgirlzz
+      POSTGRES_USER: devgirlzz
+      POSTGRES_PASSWORD: devgirlzz
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devgirlzz"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      SECRET_KEY: docker-dev-secret-change-in-production
+      DEBUG: "True"
+      ALLOWED_HOSTS: localhost,127.0.0.1,backend
+      DATABASE_URL: postgres://devgirlzz:devgirlzz@db:5432/devgirlzz
+      FRONTEND_URL: http://localhost:8080
+      CORS_ALLOWED_ORIGINS: http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: DevGirlzz@Admin2026
+      ADMIN_EMAIL: admin@devgirlzz.local
+      GOOGLE_AI_API_KEY: ${GOOGLE_AI_API_KEY:-}
+    volumes:
+      - backend_media:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /api/
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+  # Development-only: hot-reload frontend (optional)
+  frontend-dev:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
+    ports:
+      - "5173:8080"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    environment:
+      VITE_DEV_PROXY_TARGET: http://backend:8000
+    profiles:
+      - dev
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  backend_media:
+  frontend_node_modules:

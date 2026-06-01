@@ -1,0 +1,192 @@
+[
+  {
+    "model": "jobs.job",
+    "pk": 501,
+    "fields": {
+      "title": "Junior Frontend Developer (React)",
+      "company": "DevGirlzz Labs",
+      "description": "Build modern web applications with your team using React, TypeScript, and shared design systems.",
+      "requirements": "Strong HTML, CSS, and JavaScript fundamentals. Comfortable with React or another SPA framework. Git. Uzbek or English fluency.",
+      "role": "frontend",
+      "experience_level": "junior",
+      "location": "Tashkent",
+      "salary_min": 5000000,
+      "salary_max": 9000000,
+      "remote": true,
+      "active": true,
+      "created_at": "2024-06-01T08:00:00Z",
+      "updated_at": "2024-06-01T08:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 502,
+    "fields": {
+      "title": "Middle React + TypeScript Developer",
+      "company": "Silk Road Digital",
+      "description": "Grow reliable frontend experiences for domestic and international customers—paired with pragmatic delivery discipline.",
+      "requirements": "3+ years with React. TypeScript, REST APIs, state management (Redux or Zustand). Strong code-review culture.",
+      "role": "frontend",
+      "experience_level": "middle",
+      "location": "Tashkent",
+      "salary_min": 12000000,
+      "salary_max": 18000000,
+      "remote": true,
+      "active": true,
+      "created_at": "2024-06-02T08:00:00Z",
+      "updated_at": "2024-06-02T08:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 503,
+    "fields": {
+      "title": "Python / Django Backend Developer",
+      "company": "FinTech Uzbekistan",
+      "description": "Own payment and reconciliation services powering multiple products—Django REST Framework, PostgreSQL, and async workloads where needed.",
+      "requirements": "Python expertise with Django or FastAPI. SQL literacy and thoughtful REST design. Celery or similar queues are a plus.",
+      "role": "backend",
+      "experience_level": "middle",
+      "location": "Tashkent",
+      "salary_min": 14000000,
+      "salary_max": 22000000,
+      "remote": false,
+      "active": true,
+      "created_at": "2024-06-03T08:00:00Z",
+      "updated_at": "2024-06-03T08:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 504,
+    "fields": {
+      "title": "Junior Backend Developer (Node.js)",
+      "company": "Startup Hub Tashkent",
+      "description": "Ship pragmatic APIs alongside a compact, fast-moving team focused on iterative releases.",
+      "requirements": "JavaScript/TypeScript proficiency and Node fundamentals. Comfortable with Express or Nest-style patterns and JSON-heavy APIs.",
+      "role": "backend",
+      "experience_level": "junior",
+      "location": "Tashkent",
+      "salary_min": 4500000,
+      "salary_max": 8000000,
+      "remote": true,
+      "active": true,
+      "created_at": "2024-06-04T08:00:00Z",
+      "updated_at": "2024-06-04T08:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 505,
+    "fields": {
+      "title": "Full Stack Developer (Django + React)",
+      "company": "EduTech Pro",
+      "description": "Expand an educational platform spanning admin dashboards, learner experiences, and reporting workflows.",
+      "requirements": "Django REST paired with React. PostgreSQL familiarity. Comfortable shipping through Docker-backed environments.",
+      "role": "fullstack",
+      "experience_level": "middle",
+      "location": "Samarkand",
+      "salary_min": 13000000,
+      "salary_max": 20000000,
+      "remote": true,
+      "active": true,
+      "created_at": "2024-06-05T08:00:00Z",
+      "updated_at": "2024-06-05T08:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 506,
+    "fields": {
+      "title": "Flutter Mobile Developer",
+      "company": "Mobile First UZ",
+      "description": "Deliver consumer-grade Flutter builds for Android and iOS from a unified codebase backed by disciplined QA.",
+      "requirements": "Dart mastery, Flutter toolkit fluency, and confident REST integrations. Published store experience strongly preferred.",
+      "role": "mobile",
+      "experience_level": "middle",
+      "location": "Tashkent",
+      "salary_min": 11000000,
+      "salary_max": 17000000,
+      "remote": true,
+      "active": true,
+      "created_at": "2024-06-06T08:00:00Z",
+      "updated_at": "2024-06-06T08:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 507,
+    "fields": {
+      "title": "Junior Flutter Developer",
+      "company": "HealthApp UZ",
+      "description": "Support healthcare product modules—from intake flows to clinician tooling—paired with mentorship from senior teammates.",
+      "requirements": "Foundation-level Flutter comprehension: widgets, layout, and introductory state-management patterns.",
+      "role": "mobile",
+      "experience_level": "junior",
+      "location": "Tashkent",
+      "salary_min": 5000000,
+      "salary_max": 8500000,
+      "remote": false,
+      "active": true,
+      "created_at": "2024-06-07T08:00:00Z",
+      "updated_at": "2024-06-07T08:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 508,
+    "fields": {
+      "title": "DevOps Engineer (AWS / Linux)",
+      "company": "CloudStep",
+      "description": "Automate deployments, tighten observability, and keep baseline infrastructure reproducible.",
+      "requirements": "Linux administration, Docker, and CI tooling (GitHub Actions or GitLab CI). Exposure to AWS or comparable clouds plus Bash/Python scripting.",
+      "role": "devops",
+      "experience_level": "middle",
+      "location": "Tashkent",
+      "salary_min": 15000000,
+      "salary_max": 24000000,
+      "remote": true,
+      "active": true,
+      "created_at": "2024-06-08T08:00:00Z",
+      "updated_at": "2024-06-08T08:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 509,
+    "fields": {
+      "title": "UI/UX Designer",
+      "company": "Creative Studio Tashkent",
+      "description": "Own product UX from discovery to high-fidelity Figma handoffs with tight collaboration alongside engineering partners.",
+      "requirements": "Confident Figma workflows, interactive prototypes, and core UX heuristics. Portfolio review is part of the process.",
+      "role": "designer",
+      "experience_level": "junior",
+      "location": "Tashkent",
+      "salary_min": 6000000,
+      "salary_max": 11000000,
+      "remote": true,
+      "active": true,
+      "created_at": "2024-06-09T08:00:00Z",
+      "updated_at": "2024-06-09T08:00:00Z"
+    }
+  },
+  {
+    "model": "jobs.job",
+    "pk": 510,
+    "fields": {
+      "title": "Senior Backend Engineer (Python)",
+      "company": "DataScale",
+      "description": "Architect high-throughput services, streaming data paths, and internal libraries that other teams depend on daily.",
+      "requirements": "5+ years shipping Python in production. System design depth, PostgreSQL performance tuning, and meaningful automated test coverage.",
+      "role": "backend",
+      "experience_level": "senior",
+      "location": "Tashkent",
+      "salary_min": 22000000,
+      "salary_max": 35000000,
+      "remote": true,
+      "active": true,
+      "created_at": "2024-06-10T08:00:00Z",
+      "updated_at": "2024-06-10T08:00:00Z"
+    }
+  }
+]

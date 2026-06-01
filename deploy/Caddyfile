@@ -1,0 +1,12 @@
+# VPS production — Caddy reverse proxy + auto HTTPS
+# Usage: docker compose -f docker-compose.yml -f deploy/docker-compose.prod.yml up -d
+
+devgirlzz.com.uz, www.devgirlzz.com.uz {
+	encode gzip
+	reverse_proxy frontend:80
+}
+
+api.devgirlzz.com.uz {
+	encode gzip
+	reverse_proxy backend:8000
+}

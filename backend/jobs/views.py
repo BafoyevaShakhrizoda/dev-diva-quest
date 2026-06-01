@@ -10,6 +10,17 @@ from .serializers import JobSerializer, JobMatchSerializer, JobApplicationSerial
 
 
 @api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def job_detail(request, job_id):
+    try:
+        job = Job.objects.get(id=job_id, active=True)
+    except Job.DoesNotExist:
+        return Response({'detail': 'Job not found.'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = JobSerializer(job, context={'request': request})
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def recommended_jobs(request):
     user = request.user
@@ -124,8 +135,8 @@ def apply_job(request, job_id):
         user = request.user
         
         serializer = JobApplicationCreateSerializer(
-            data=request.data, 
-            context={'request': request}
+            data=request.data,
+            context={'request': request, 'job': job},
         )
         
         if serializer.is_valid():

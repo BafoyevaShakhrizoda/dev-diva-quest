@@ -67,17 +67,19 @@ class SkillTestCreateSerializer(serializers.ModelSerializer):
 
 
 class SkillEvaluationSerializer(serializers.Serializer):
-    role = serializers.ChoiceField(choices=SkillTest.ROLE_CHOICES)
-    questions = serializers.ListField()
-    answers = serializers.ListField()
+    """role: SkillTest role key (e.g. backend, frontend) or career id mapped client-side."""
+    role = serializers.CharField(max_length=40)
+    tier = serializers.CharField(required=False, allow_blank=True, default="")
+    questions = serializers.ListField(child=serializers.DictField())
+    answers = serializers.ListField(child=serializers.IntegerField())
 
     def validate(self, attrs):
-        questions = attrs.get('questions', [])
-        answers = attrs.get('answers', [])
-        
+        questions = attrs.get("questions", [])
+        answers = attrs.get("answers", [])
+
         if len(questions) != len(answers):
             raise serializers.ValidationError(
-                "Number of questions must match number of answers"
+                "Number of questions must match number of answers",
             )
-        
+
         return attrs

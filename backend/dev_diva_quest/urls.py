@@ -1,16 +1,17 @@
-from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.authtoken.views import obtain_auth_token
 from django.http import JsonResponse
 
+from dev_diva_quest.admin import dev_diva_admin
+
 urlpatterns = [
     # Root path for health check
     path('', lambda request: JsonResponse({'status': 'ok', 'message': 'Dev Diva Quest API is running'})),
     
-    # Admin panel - production uchun
-    path('admin/', admin.site.urls),
+    # Custom admin site (User = AUTH_USER_MODEL, jobs, skills, CV, …)
+    path('admin/', dev_diva_admin.urls),
     
     # DRF browsable API login/logout (DEBUG=True da ishlaydi)
     path('api-auth/', include('rest_framework.urls')),
@@ -23,6 +24,8 @@ urlpatterns = [
     path('api/skills/', include('skills.urls')),
     path('api/cv/', include('cv.urls')),
     path('api/jobs/', include('jobs.urls')),
+    path('api/events/', include('events.urls')),
+    path('api/admin/', include('admin_panel.urls')),
 ]
 
 # Static files for production

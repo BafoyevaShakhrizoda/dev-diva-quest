@@ -4,6 +4,14 @@ import random
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
+
+TIER_LEVEL_ORDER = ["beginner", "junior", "middle", "senior"]
+TIER_LEVEL_BAND = {
+    "junior": (0, 1),
+    "middle": (1, 2),
+    "senior": (2, 3),
+}
+
 from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -12,6 +20,187 @@ from .serializers import (
     QuestionSerializer, SkillTestSerializer, 
     SkillTestCreateSerializer, SkillEvaluationSerializer
 )
+
+def _shuffle_mcq_options(opts: list, correct_idx: int) -> tuple:
+    """Randomize four options; return (shuffled_options, new_correct_index)."""
+    if len(opts) < 4:
+        return opts, correct_idx
+    perm = list(range(4))
+    random.shuffle(perm)
+    shuffled = [opts[i] for i in perm]
+    try:
+        ca = int(correct_idx)
+    except (TypeError, ValueError):
+        ca = 0
+    ca = max(0, min(3, ca))
+    new_correct = perm.index(ca)
+    return shuffled, new_correct
+
+
+def _normalize_question_for_eval(q: dict) -> dict:
+    text = (q.get("q") or q.get("question_text") or "").strip()
+    options = q.get("options") or []
+    ca = q.get("correct_answer")
+    if ca is None:
+        ca = q.get("correct", 0)
+    try:
+        ca = int(ca)
+    except (TypeError, ValueError):
+        ca = 0
+    return {
+        "question_text": text,
+        "options": options,
+        "correct_answer": ca,
+        "difficulty": q.get("difficulty", "medium"),
+    }
+
+
+def _cap_level_by_tier(level: str, tier: str) -> str:
+    tier = (tier or "").lower()
+    band = TIER_LEVEL_BAND.get(tier)
+    if not band or level not in TIER_LEVEL_ORDER:
+        return level
+    lo, hi = band
+    idx = TIER_LEVEL_ORDER.index(level)
+    idx = max(lo, min(idx, hi))
+    return TIER_LEVEL_ORDER[idx]
+
+
+def _level_display(level: str) -> str:
+    return {
+        "beginner": "Beginner",
+        "junior": "Junior",
+        "middle": "Middle",
+        "senior": "Senior",
+    }.get(level, (level or "junior").title())
+
+
+def career_id_to_job_role(career_id: str) -> str:
+    """Map SPA career id to Job.role / SkillTest.role for recommendations."""
+    cid = (career_id or "").lower().strip()
+    return {
+        "frontend": "frontend",
+        "backend": "backend",
+        "fullstack": "fullstack",
+        "mobile": "mobile",
+        "devops": "devops",
+        "designer": "designer",
+        "data": "backend",
+        "qa": "frontend",
+        "cybersecurity": "devops",
+        "management": "fullstack",
+        "cloud": "devops",
+        "ai_ml": "backend",
+        "blockchain": "backend",
+    }.get(cid, "fullstack")
+
+
+@api_view(["POST"])
+@permission_classes([permissions.AllowAny])
+def generate_test_session(request):
+    """
+    Return fresh MCQ for one test session (JSON only, not saved to DB).
+    Requires GOOGLE_AI_API_KEY.
+    """
+    role = (request.data.get("role") or "").strip()
+    tier = (request.data.get("tier") or "junior").lower()
+    language = (request.data.get("language") or "").strip()
+    career_title = (request.data.get("career_title") or role).strip()
+    try:
+        count = int(request.data.get("count", 10))
+    except (TypeError, ValueError):
+        count = 10
+    count = max(5, min(count, 15))
+
+    if not role:
+        return Response({"error": "role is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    tier_hints = {
+        "junior": "Entry-level: syntax, basics, simple scenarios. No architecture.",
+        "middle": "Intermediate: APIs, debugging, patterns, tooling.",
+        "senior": "Advanced: scalability, tradeoffs, performance, system design light.",
+    }
+    tier_desc = tier_hints.get(tier, tier_hints["junior"])
+
+    stack_line = f"Primary stack / language: {language}." if language else ""
+
+    prompt = f"""You write technical skill assessment questions for women in tech (clear, respectful tone).
+
+Context:
+- Career track: {career_title}
+- Difficulty tier: {tier.upper()} — {tier_desc}
+- {stack_line}
+
+Generate exactly {count} multiple-choice questions. Each question:
+- 4 options as strings (A–D content only, not prefixed with letters)
+- Exactly one correct answer; put the correct index in correct_answer (0–3)
+- Practical or conceptual, appropriate for the tier
+
+Return JSON with this exact shape:
+{{
+  "questions": [
+    {{
+      "question_text": "string",
+      "options": ["opt1", "opt2", "opt3", "opt4"],
+      "correct_answer": 0
+    }}
+  ]
+}}"""
+
+    from dev_diva_quest.gemini_service import GeminiError, generate_json
+
+    try:
+        data = generate_json(
+            prompt,
+            system_instruction="Output only valid JSON. No markdown.",
+        )
+    except GeminiError as e:
+        return Response(
+            {"error": str(e), "code": e.code},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    if not data:
+        return Response(
+            {
+                "error": "AI is unavailable. Set GOOGLE_AI_API_KEY and GEMINI_MODEL in backend/.env.",
+                "code": "NO_AI",
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    raw_list = data.get("questions") if isinstance(data, dict) else None
+    if isinstance(data, list):
+        raw_list = data
+    if not isinstance(raw_list, list) or not raw_list:
+        return Response(
+            {"error": "Unexpected AI response shape", "code": "BAD_AI_SHAPE"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    out = []
+    for item in raw_list:
+        if not isinstance(item, dict):
+            continue
+        text = (item.get("question_text") or item.get("q") or "").strip()
+        opts = item.get("options") or []
+        if len(opts) < 4:
+            continue
+        try:
+            ca = int(item.get("correct_answer", item.get("correct", 0)))
+        except (TypeError, ValueError):
+            ca = 0
+        ca = max(0, min(3, ca))
+        shuffled_opts, new_ca = _shuffle_mcq_options(opts[:4], ca)
+        out.append({"q": text, "options": shuffled_opts, "correct": new_ca})
+
+    if len(out) < 5:
+        return Response(
+            {"error": "AI returned too few valid questions", "code": "SHORT_AI"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    return Response({"questions": out, "source": "ai", "tier": tier, "role": role})
+
 
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
@@ -26,7 +215,6 @@ def get_questions(request):
     
     questions = Question.objects.filter(role=role)
     
-    # Get all available questions for this role
     all_questions = list(questions)
     
     if not all_questions:
@@ -35,7 +223,6 @@ def get_questions(request):
             status=status.HTTP_404_NOT_FOUND
         )
     
-    # Return all questions (frontend will select which ones to use)
     serializer = QuestionSerializer(all_questions, many=True)
     return Response({
         'questions': serializer.data,
@@ -45,7 +232,7 @@ def get_questions(request):
 
 
 @api_view(['POST'])
-@permission_classes([permissions.AllowAny])  # Changed to AllowAny for testing
+@permission_classes([permissions.AllowAny])  
 def generate_questions(request):
     """Generate AI-powered questions for skill tests"""
     role = request.data.get('role')
@@ -157,7 +344,11 @@ def _normalize_level(level_raw: str) -> str:
 def save_skill_result(request):
     """Store a skill test result from the SPA (after client-side / edge evaluation)."""
     role_raw = request.data.get('role') or 'frontend'
-    role = _normalize_skill_role(str(role_raw))
+    career_id = request.data.get('career_id')
+    if career_id:
+        role = career_id_to_job_role(str(career_id))
+    else:
+        role = _normalize_skill_role(str(role_raw))
     language = request.data.get('language')
     tier = request.data.get('tier') or ''
     level_raw = request.data.get('level') or 'Junior'
@@ -178,6 +369,7 @@ def save_skill_result(request):
         'items': questions_data,
         'language': language,
         'tier': tier,
+        'career_id': str(career_id) if career_id else None,
     }
     answers_payload = answers_data if isinstance(answers_data, dict) else {'raw': answers_data}
     result_level = _normalize_level(str(level_raw))
@@ -250,17 +442,19 @@ Return JSON with keys:
 
 
 @api_view(['POST'])
-@permission_classes([permissions.AllowAny])  # Changed to AllowAny for testing
+@permission_classes([permissions.AllowAny])
 def evaluate_skill(request):
     serializer = SkillEvaluationSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     role = serializer.validated_data['role']
-    questions = serializer.validated_data['questions']
+    tier = serializer.validated_data.get('tier') or ''
+    raw_questions = serializer.validated_data['questions']
     answers = serializer.validated_data['answers']
-    
+
     try:
+        questions = [_normalize_question_for_eval(q) for q in raw_questions]
         total_questions = len(questions)
         if total_questions == 0:
             return Response(
@@ -269,19 +463,14 @@ def evaluate_skill(request):
             )
 
         correct_count = 0
-
         for i, answer in enumerate(answers):
-            # Get the correct answer from question data
-            question_data = questions[i]
-            correct_answer_index = question_data.get('correct_answer', 0)  # Default to 0 if not specified
-            
+            qn = questions[i]
+            correct_answer_index = qn.get('correct_answer', 0)
             if answer == correct_answer_index:
                 correct_count += 1
-        
-        # Calculate percentage
+
         score_percentage = (correct_count / total_questions) * 100
-        
-        # Determine level based on percentage
+
         if score_percentage <= 20:
             level = 'beginner'
         elif score_percentage <= 40:
@@ -291,9 +480,11 @@ def evaluate_skill(request):
         else:
             level = 'senior'
 
+        level = _cap_level_by_tier(level, tier)
+
         feedback = (
             f"You scored {correct_count}/{total_questions} ({score_percentage:.1f}%). "
-            f"Your level: {level.title()}."
+            f"Your assessed level for this tier: {_level_display(level)}."
         )
         weak_topics: list = []
         next_steps: list = []
@@ -316,18 +507,20 @@ def evaluate_skill(request):
         return Response({
             'score': correct_count,
             'total_questions': total_questions,
-            'percentage': score_percentage,
+            'percentage': round(score_percentage, 1),
             'level': level,
+            'level_display': _level_display(level),
             'feedback': feedback,
             'weak_topics': weak_topics,
             'next_steps': next_steps,
             'role': role,
         })
-        
+
     except Exception as e:
+        logger.exception("evaluate_skill failed")
         return Response(
-            {'error': f'Failed to evaluate skills: {str(e)}'}, 
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            {'error': f'Failed to evaluate skills: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
