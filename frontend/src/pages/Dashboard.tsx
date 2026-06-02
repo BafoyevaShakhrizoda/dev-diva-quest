@@ -1,10 +1,23 @@
 import { useState, useEffect } from "react";
-import { ExternalLink, Newspaper, Calendar, MapPin, RefreshCw, TrendingUp, Zap } from "lucide-react";
+import {
+  ExternalLink,
+  Newspaper,
+  Calendar,
+  MapPin,
+  RefreshCw,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 import { firecrawlApi } from "@/lib/api/firecrawl";
 import AppNav from "@/components/AppNav";
 import AppFooter from "@/components/AppFooter";
 import { useAuth } from "@/hooks/useAuth";
-import { apiClient, type PlatformEventRow } from "@/integrations/api/client";
+import {
+  apiClient,
+  type PlatformCommunityRow,
+  type PlatformEventRow,
+  type PlatformNewsRow,
+} from "@/integrations/api/client";
 import { formatUserDisplayName } from "@/lib/userDisplayName";
 import { useI18n } from "@/i18n/I18nProvider";
 
@@ -29,10 +42,13 @@ const Dashboard = () => {
   const { t } = useI18n();
   const [news, setNews] = useState<NewsItem[]>([]);
   const [events, setEvents] = useState<PlatformEventRow[]>([]);
+  const [communities, setCommunities] = useState<PlatformCommunityRow[]>([]);
   const [loadingNews, setLoadingNews] = useState(true);
   const [loadingEvents, setLoadingEvents] = useState(true);
+  const [loadingCommunities, setLoadingCommunities] = useState(true);
   const [newsError, setNewsError] = useState("");
   const [eventsError, setEventsError] = useState("");
+  const [communitiesError, setCommunitiesError] = useState("");
   const platformNews: NewsItem = {
     title: t("dashboard.platformNewsTitle"),
     url: "https://devgirlzz.com.uz",
@@ -40,17 +56,33 @@ const Dashboard = () => {
     source: t("dashboard.platformNewsSource"),
   };
 
+  const mapApiNews = (rows: PlatformNewsRow[]): NewsItem[] =>
+    rows.map((r) => ({
+      title: r.title,
+      url: r.external_url?.trim() || "https://devgirlzz.com.uz",
+      description: r.summary,
+      publishedDate: r.published_at ?? undefined,
+      source: r.source || "DevGirlzz",
+    }));
+
   const fetchNews = async () => {
     setLoadingNews(true);
     setNewsError("");
     try {
+      const curated = await apiClient.getNews();
+      if (curated.length > 0) {
+        setNews(mapApiNews(curated));
+        return;
+      }
+
       const res = await firecrawlApi.search(
         "Uzbekistan women in tech latest news girls STEM IT Uzbekistan",
-        { limit: 8, tbs: "qdr:m" }
+        { limit: 6, tbs: "qdr:m" },
       );
-      const results = res.data && typeof res.data === "object" && "results" in res.data
-        ? (res.data as { results?: FirecrawlSearchHit[] }).results
-        : undefined;
+      const results =
+        res.data && typeof res.data === "object" && "results" in res.data
+          ? (res.data as { results?: FirecrawlSearchHit[] }).results
+          : undefined;
       if (res.success && results?.length) {
         setNews([
           platformNews,
@@ -59,9 +91,7 @@ const Dashboard = () => {
             url: String(r.url ?? ""),
             description: r.description,
             publishedDate: r.publishedDate,
-            source:
-              r.source ||
-              (r.url ? new URL(r.url).hostname.replace("www.", "") : ""),
+            source: r.source || (r.url ? new URL(r.url).hostname.replace("www.", "") : ""),
           })),
         ]);
       } else {
@@ -89,9 +119,25 @@ const Dashboard = () => {
     }
   };
 
+  const fetchCommunities = async () => {
+    setLoadingCommunities(true);
+    setCommunitiesError("");
+    try {
+      const rows = await apiClient.getCommunities();
+      setCommunities(rows);
+      if (rows.length === 0) setCommunitiesError(t("dashboard.communitiesEmpty"));
+      else setCommunitiesError("");
+    } catch {
+      setCommunitiesError(t("dashboard.communitiesFail"));
+    } finally {
+      setLoadingCommunities(false);
+    }
+  };
+
   useEffect(() => {
     fetchNews();
     fetchEvents();
+    fetchCommunities();
   }, []);
 
   const greetingName = formatUserDisplayName(user ?? null);
@@ -145,9 +191,9 @@ const Dashboard = () => {
                 color: "text-primary",
               },
               {
-                icon: Zap,
-                label: t("dashboard.statRes"),
-                value: t("dashboard.statResVal"),
+                icon: Users,
+                label: t("dashboard.statCommunities"),
+                value: t("dashboard.statCommunitiesVal"),
                 color: "text-primary",
               },
             ].map((item) => (
@@ -167,7 +213,7 @@ const Dashboard = () => {
         <div className="absolute bottom-0 left-0 right-0 h-10 bg-background" style={{ clipPath: "ellipse(55% 100% at 50% 100%)" }} />
       </section>
 
-      <div className="container mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="container mx-auto grid grid-cols-1 gap-8 px-4 py-10 lg:grid-cols-2 xl:grid-cols-3">
         {/* News Section */}
         <div>
           <div className="flex items-center justify-between mb-6">
@@ -346,6 +392,82 @@ const Dashboard = () => {
                   </div>
                 );
               })}
+            </div>
+          )}
+        </div>
+
+        {/* Communities Section */}
+        <div className="lg:col-span-2 xl:col-span-1">
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+                <Users size={16} className="text-primary" />
+              </div>
+              <div>
+                <h2 className="font-display text-lg font-bold text-foreground">
+                  {t("dashboard.communitiesTitle")}
+                </h2>
+                <p className="font-body text-xs text-muted-foreground">{t("dashboard.communitiesSub")}</p>
+              </div>
+            </div>
+            <button
+              onClick={fetchCommunities}
+              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 font-body text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-primary"
+            >
+              <RefreshCw size={12} />
+              {t("common.refresh")}
+            </button>
+          </div>
+
+          {loadingCommunities && (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="animate-pulse rounded-2xl border border-border bg-card p-4">
+                  <div className="mb-2 h-4 w-3/4 rounded-lg bg-muted" />
+                  <div className="h-3 w-full rounded-lg bg-muted" />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {communitiesError && !loadingCommunities && communities.length === 0 && (
+            <div className="rounded-2xl border border-border bg-card p-8 text-center font-body text-muted-foreground">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
+                <Users size={20} className="text-muted-foreground" />
+              </div>
+              <p className="text-sm">{communitiesError}</p>
+            </div>
+          )}
+
+          {!loadingCommunities && communities.length > 0 && (
+            <div className="space-y-3">
+              {communities.map((c) => (
+                <a
+                  key={c.id}
+                  href={c.external_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group block rounded-2xl border border-border bg-card p-4 transition-all duration-200 hover:border-primary/40 hover:shadow-card"
+                >
+                  <div className="mb-2 flex items-start justify-between gap-3">
+                    <h3 className="line-clamp-2 font-body text-sm font-semibold leading-relaxed text-foreground transition-colors group-hover:text-primary">
+                      {c.name}
+                    </h3>
+                    <ExternalLink
+                      size={13}
+                      className="mt-0.5 shrink-0 text-muted-foreground transition-colors group-hover:text-primary"
+                    />
+                  </div>
+                  {c.description ? (
+                    <p className="mb-3 line-clamp-2 font-body text-xs leading-relaxed text-muted-foreground">
+                      {c.description}
+                    </p>
+                  ) : null}
+                  <span className="rounded-full border border-primary/15 bg-primary/8 px-2.5 py-1 font-body text-xs font-medium capitalize text-primary">
+                    {c.community_type}
+                  </span>
+                </a>
+              ))}
             </div>
           )}
         </div>

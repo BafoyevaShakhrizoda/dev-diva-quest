@@ -5,11 +5,15 @@ import {
   Briefcase,
   ExternalLink,
   FileText,
+  LayoutDashboard,
   Loader2,
   LogOut,
+  Pencil,
   Shield,
   Users,
 } from "lucide-react";
+import AdminContentSection from "@/components/admin/AdminContentSection";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AppFooter from "@/components/AppFooter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,7 +45,7 @@ const AdminPanel = () => {
 
   const djangoAdminUrl = useMemo(() => {
     const origin = getDjangoOrigin();
-    return origin ? `${origin}/admin/` : "";
+    return origin ? `${origin}/django-admin/` : "";
   }, []);
 
   const loadDashboard = useCallback(async () => {
@@ -249,7 +253,23 @@ const AdminPanel = () => {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <>
+          <Tabs defaultValue="content" className="w-full">
+            <TabsList className="mb-8 flex h-auto flex-wrap gap-1">
+              <TabsTrigger value="content" className="gap-1.5">
+                <Pencil className="h-4 w-4" />
+                {t("admin.tabContent")}
+              </TabsTrigger>
+              <TabsTrigger value="monitoring" className="gap-1.5">
+                <LayoutDashboard className="h-4 w-4" />
+                {t("admin.tabMonitoring")}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="content" className="mt-0">
+              <AdminContentSection />
+            </TabsContent>
+
+            <TabsContent value="monitoring" className="mt-0">
             <section>
               <h2 className="font-display text-lg font-semibold text-foreground">{t("admin.statsTitle")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">{t("admin.statsSub")}</p>
@@ -318,7 +338,8 @@ const AdminPanel = () => {
                 ))}
               </div>
             </section>
-          </>
+            </TabsContent>
+          </Tabs>
         )}
 
         <Link

@@ -6,12 +6,16 @@ from django.http import JsonResponse
 
 from dev_diva_quest.admin import dev_diva_admin
 
+def _health(_request):
+    return JsonResponse({'status': 'ok', 'message': 'DevGirlzz API is running'})
+
+
 urlpatterns = [
-    # Root path for health check
-    path('', lambda request: JsonResponse({'status': 'ok', 'message': 'Dev Diva Quest API is running'})),
-    
-    # Custom admin site (User = AUTH_USER_MODEL, jobs, skills, CV, …)
-    path('admin/', dev_diva_admin.urls),
+    path('', _health),
+    path('api/health/', _health),
+
+    # Django admin (frontend staff panel lives at /admin in the SPA)
+    path('django-admin/', dev_diva_admin.urls),
     
     # DRF browsable API login/logout (DEBUG=True da ishlaydi)
     path('api-auth/', include('rest_framework.urls')),

@@ -1,0 +1,54 @@
+[
+  {
+    "model": "events.community",
+    "pk": 1,
+    "fields": {
+      "name": "Women in Tech Uzbekistan",
+      "description": "Ayollar dasturchilar uchun networking, mentorlik va tadbirlar.",
+      "external_url": "https://t.me/womenintechuz",
+      "community_type": "telegram",
+      "is_active": true,
+      "sort_order": 0,
+      "created_at": "2026-06-01T10:00:00Z"
+    }
+  },
+  {
+    "model": "events.community",
+    "pk": 2,
+    "fields": {
+      "name": "IT Park Developers",
+      "description": "Rasmiy IT Park dasturchilar hamjamiyati — meetuplar va vakansiyalar.",
+      "external_url": "https://t.me/itparkuz",
+      "community_type": "telegram",
+      "is_active": true,
+      "sort_order": 1,
+      "created_at": "2026-06-01T10:00:00Z"
+    }
+  },
+  {
+    "model": "events.community",
+    "pk": 3,
+    "fields": {
+      "name": "DevGirlzz Community",
+      "description": "Platforma foydalanuvchilari uchun yangiliklar, savollar va qo'llab-quvvatlash.",
+      "external_url": "https://devgirlzz.com.uz",
+      "community_type": "website",
+      "is_active": true,
+      "sort_order": 2,
+      "created_at": "2026-06-01T10:00:00Z"
+    }
+  },
+  {
+    "model": "events.community",
+    "pk": 4,
+    "fields": {
+      "name": "Python Uzbekistan",
+      "description": "Python, Django va data science bo'yicha ochiq muhokamalar.",
+      "external_url": "https://t.me/pythonuz",
+      "community_type": "telegram",
+      "is_active": true,
+      "sort_order": 3,
+      "created_at": "2026-06-01T10:00:00Z"
+    }
+  }
+]

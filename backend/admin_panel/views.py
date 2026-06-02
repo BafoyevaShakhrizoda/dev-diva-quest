@@ -49,6 +49,18 @@ ADMIN_CAPABILITIES = [
         'django_section': 'Events',
     },
     {
+        'id': 'news',
+        'title': 'News & announcements',
+        'description': 'Publish curated news articles for the dashboard feed.',
+        'django_section': 'News articles',
+    },
+    {
+        'id': 'communities',
+        'title': 'Tech communities',
+        'description': 'Manage Telegram, Discord, and other community links on the dashboard.',
+        'django_section': 'Communities',
+    },
+    {
         'id': 'stats',
         'title': 'Platform statistics',
         'description': 'View live counts of users, jobs, tests, and applications in this admin dashboard.',

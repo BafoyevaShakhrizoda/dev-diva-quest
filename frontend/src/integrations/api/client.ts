@@ -8,6 +8,40 @@ export type PlatformEventRow = {
   sort_order: number;
 };
 
+export type AdminEventRow = PlatformEventRow & {
+  is_active: boolean;
+  created_at?: string;
+};
+
+export type PlatformNewsRow = {
+  id: number;
+  title: string;
+  summary: string;
+  external_url: string;
+  source: string;
+  published_at: string | null;
+  sort_order: number;
+};
+
+export type AdminNewsRow = PlatformNewsRow & {
+  is_active: boolean;
+  created_at?: string;
+};
+
+export type PlatformCommunityRow = {
+  id: number;
+  name: string;
+  description: string;
+  external_url: string;
+  community_type: string;
+  sort_order: number;
+};
+
+export type AdminCommunityRow = PlatformCommunityRow & {
+  is_active: boolean;
+  created_at?: string;
+};
+
 function resolveApiBase(): string {
   const fromEnv = import.meta.env.VITE_API_BASE_URL?.trim();
   /** In development, requests go through Vite proxy: `/api` → Django (default http://127.0.0.1:8000). */
@@ -438,6 +472,16 @@ export const apiClient = {
     return Array.isArray(raw) ? (raw as PlatformEventRow[]) : [];
   },
 
+  async getNews(): Promise<PlatformNewsRow[]> {
+    const raw = await this.get("events/news/", false);
+    return Array.isArray(raw) ? (raw as PlatformNewsRow[]) : [];
+  },
+
+  async getCommunities(): Promise<PlatformCommunityRow[]> {
+    const raw = await this.get("events/communities/", false);
+    return Array.isArray(raw) ? (raw as PlatformCommunityRow[]) : [];
+  },
+
   async getAllJobs(filters?: Record<string, string>) {
     const query =
       filters && Object.keys(filters).length
@@ -488,5 +532,56 @@ export const apiClient = {
       role: string;
       capabilities: AdminCapability[];
     }>;
+  },
+
+  async adminListEvents(): Promise<AdminEventRow[]> {
+    const raw = await adminRequest("GET", "admin/events/", undefined, true);
+    return Array.isArray(raw) ? (raw as AdminEventRow[]) : [];
+  },
+
+  async adminCreateEvent(data: Partial<AdminEventRow>) {
+    return adminRequest("POST", "admin/events/", data, true) as Promise<AdminEventRow>;
+  },
+
+  async adminUpdateEvent(id: number, data: Partial<AdminEventRow>) {
+    return adminRequest("PATCH", `admin/events/${id}/`, data, true) as Promise<AdminEventRow>;
+  },
+
+  async adminDeleteEvent(id: number) {
+    await adminRequest("DELETE", `admin/events/${id}/`, undefined, true);
+  },
+
+  async adminListNews(): Promise<AdminNewsRow[]> {
+    const raw = await adminRequest("GET", "admin/news/", undefined, true);
+    return Array.isArray(raw) ? (raw as AdminNewsRow[]) : [];
+  },
+
+  async adminCreateNews(data: Partial<AdminNewsRow>) {
+    return adminRequest("POST", "admin/news/", data, true) as Promise<AdminNewsRow>;
+  },
+
+  async adminUpdateNews(id: number, data: Partial<AdminNewsRow>) {
+    return adminRequest("PATCH", `admin/news/${id}/`, data, true) as Promise<AdminNewsRow>;
+  },
+
+  async adminDeleteNews(id: number) {
+    await adminRequest("DELETE", `admin/news/${id}/`, undefined, true);
+  },
+
+  async adminListCommunities(): Promise<AdminCommunityRow[]> {
+    const raw = await adminRequest("GET", "admin/communities/", undefined, true);
+    return Array.isArray(raw) ? (raw as AdminCommunityRow[]) : [];
+  },
+
+  async adminCreateCommunity(data: Partial<AdminCommunityRow>) {
+    return adminRequest("POST", "admin/communities/", data, true) as Promise<AdminCommunityRow>;
+  },
+
+  async adminUpdateCommunity(id: number, data: Partial<AdminCommunityRow>) {
+    return adminRequest("PATCH", `admin/communities/${id}/`, data, true) as Promise<AdminCommunityRow>;
+  },
+
+  async adminDeleteCommunity(id: number) {
+    await adminRequest("DELETE", `admin/communities/${id}/`, undefined, true);
   },
 };

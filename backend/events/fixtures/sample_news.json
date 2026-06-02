@@ -1,0 +1,44 @@
+[
+  {
+    "model": "events.newsarticle",
+    "pk": 1,
+    "fields": {
+      "title": "DevGirlzz: yangi IT hamjamiyatlar va tadbirlar markazi ishga tushdi",
+      "summary": "Ayollar uchun karyera platformasi — dashboard orqali yangiliklar, tadbirlar va Telegram hamjamiyatlar bir joyda.",
+      "external_url": "https://devgirlzz.com.uz",
+      "source": "DevGirlzz",
+      "published_at": "2026-06-01",
+      "is_active": true,
+      "sort_order": 0,
+      "created_at": "2026-06-01T10:00:00Z"
+    }
+  },
+  {
+    "model": "events.newsarticle",
+    "pk": 2,
+    "fields": {
+      "title": "IT Park: 2026 yil uchun dasturchilar uchun yangi akseleratsiya dasturi",
+      "summary": "Startup va SaaS jamoalari uchun mentorlik, investor uchrashuvlari va bepul ofis imkoniyatlari e'lon qilindi.",
+      "external_url": "https://it-park.uz",
+      "source": "IT Park Uzbekistan",
+      "published_at": "2026-05-25",
+      "is_active": true,
+      "sort_order": 1,
+      "created_at": "2026-05-25T10:00:00Z"
+    }
+  },
+  {
+    "model": "events.newsarticle",
+    "pk": 3,
+    "fields": {
+      "title": "O'zbekistonda ayollar dasturchilar uchun bepul Python bootcamp e'loni",
+      "summary": "6 haftalik onlayn darslar, portfolio loyihalari va ishga joylashish bo'yicha maslahatlar.",
+      "external_url": "https://digital.gov.uz",
+      "source": "Digital Uzbekistan",
+      "published_at": "2026-05-18",
+      "is_active": true,
+      "sort_order": 2,
+      "created_at": "2026-05-18T10:00:00Z"
+    }
+  }
+]
